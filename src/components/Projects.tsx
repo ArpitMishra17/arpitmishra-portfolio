@@ -1,0 +1,109 @@
+import { Fragment } from 'react'
+import ScrollReveal from './ScrollReveal'
+
+const projects = [
+  {
+    name: 'CareerWiki',
+    desc: 'AI-powered platform for exploring career paths with interactive simulations and guidance.<br/>Integrated a personalized AI career consultant for tailored advice and analysis.<br/>Server-side logic with Next.js API routes and MongoDB for data storage.',
+    tech: 'Next.js · Tailwind CSS · Google Gemini API · MongoDB',
+  },
+  {
+    name: 'PropChain',
+    desc: 'Real Estate marketplace on blockchain for validating real estate documents and buying and selling of land.<br/>Agentic AI based chat using LangGraph for interacting with the website.<br/>Implemented facial recognition based verification using Tesseract.',
+    tech: 'Python · FastAPI · LangGraph · CopilotKit CoAgents · Solidity',
+  },
+  {
+    name: 'RideMates',
+    desc: 'Ride-sharing/carpool platform connecting drivers and riders.<br/>Built authentication, schema design, and ride-matching logic.<br/>Enhanced frontend UX with ratings, ride updates, and profile management.',
+    tech: 'React · Node.js · MongoDB · Express · Firebase · Tailwind CSS',
+  },
+  {
+    name: 'Speech to Insights',
+    desc: 'Minimal frontend for converting voice input into text using OpenAI Whisper and generating insights using Hugging Face Inference Client pre voice integration in chatgpt era.',
+    tech: 'FastAPI · React · Tailwind CSS · OpenAI Whisper',
+  },
+]
+
+function renderLineBreaks(htmlLikeText: string) {
+  const parts = htmlLikeText.split(/<br\s*\/?>/gi)
+  return parts.map((part, i) => (
+    <Fragment key={i}>
+      {part}
+      {i < parts.length - 1 && <br />}
+    </Fragment>
+  ))
+}
+
+export default function Projects() {
+  return (
+    <section className="py-20 border-b" style={{ borderColor: 'var(--border)' }} id="projects">
+      <div className="max-w-[1060px] mx-auto px-5 md:px-8">
+        <div
+          className="text-[11px] tracking-[2.5px] uppercase mb-6 flex justify-between items-center"
+          style={{ color: 'var(--dim)' }}
+        >
+          <span>Projects</span>
+          <span className="text-[12px]" style={{ color: 'var(--accent)' }}>4 Projects</span>
+        </div>
+
+        <ScrollReveal stagger>
+          <div
+            className="flex flex-col"
+            style={{ gap: '1px', background: 'var(--border)', border: '1px solid var(--border)' }}
+          >
+            {projects.map((proj, i) => (
+              <div
+                key={i}
+                className="reveal sweep-hover grid grid-cols-1 md:grid-cols-[180px_1fr_auto] gap-2 md:gap-5 p-5 px-6 items-start relative"
+                style={{ background: 'var(--bg2)' }}
+                onMouseEnter={e =>
+                  (e.currentTarget.style.background =
+                    'color-mix(in srgb, var(--bg2) 92%, var(--accent) 8%)')
+                }
+                onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg2)')}
+              >
+                <div
+                  className="text-[15px] flex items-center gap-2"
+                  style={{ color: 'var(--accent2)' }}
+                >
+                  {proj.name}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <div
+                    className="text-[13px] leading-[1.5]"
+                    style={{ color: 'var(--dim)' }}
+                  >
+                    {renderLineBreaks(proj.desc)}
+                  </div>
+                  <div className="text-[12px] opacity-80" style={{ color: 'var(--dim)' }}>
+                    {proj.tech}
+                  </div>
+                </div>
+                <div className="flex gap-2 self-start md:self-center">
+                  <a
+                    href="#"
+                    className="text-[12px] px-2.5 py-1 tracking-wider transition-all hover:no-underline"
+                    style={{
+                      color: 'var(--dim)',
+                      border: '1px solid var(--border)',
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.borderColor = 'var(--accent)'
+                      e.currentTarget.style.color = 'var(--accent)'
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.borderColor = 'var(--border)'
+                      e.currentTarget.style.color = 'var(--dim)'
+                    }}
+                  >
+                    source
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+        </ScrollReveal>
+      </div>
+    </section>
+  )
+}
