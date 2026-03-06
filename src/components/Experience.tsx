@@ -1,10 +1,9 @@
-import { Fragment } from 'react'
 import ScrollReveal from './ScrollReveal'
 
 const experiences = [
   {
     company: 'Zed',
-    role: 'Guild Member',
+    role: 'Open Source Contributor',
     period: 'Mar 2026 — Present',
     current: true,
     desc: 'Accepted into the Zed Guild, where I collaborate with the core team to tackle real issues in an editor developed openly.<br/>Contributing to globally used developer features while strengthening my open-source contribution experience.',
@@ -53,14 +52,18 @@ const experiences = [
   },
 ]
 
-function renderLineBreaks(htmlLikeText: string) {
-  const parts = htmlLikeText.split(/<br\s*\/?>/gi)
-  return parts.map((part, i) => (
-    <Fragment key={i}>
-      {part}
-      {i < parts.length - 1 && <br />}
-    </Fragment>
-  ))
+function renderBulletPoints(htmlLikeText: string) {
+  const points = htmlLikeText.split(/<br\s*\/?>/gi).filter(p => p.trim())
+  return (
+    <ul className="flex flex-col gap-2 list-none m-0 p-0">
+      {points.map((point, i) => (
+        <li key={i} className="flex items-start gap-2">
+          <span className="mt-[7px] shrink-0 w-[5px] h-[5px] rounded-full" style={{ background: 'var(--accent)' }} />
+          <span>{point.trim()}</span>
+        </li>
+      ))}
+    </ul>
+  )
 }
 
 export default function Experience() {
@@ -123,10 +126,10 @@ export default function Experience() {
                   {exp.period}
                 </div>
                 <div
-                  className="text-[13px] leading-[1.7]"
+                  className="text-[13px] leading-[1.7] mt-1"
                   style={{ color: 'var(--dim)' }}
                 >
-                  {renderLineBreaks(exp.desc)}
+                  {renderBulletPoints(exp.desc)}
                 </div>
               </div>
             ))}
