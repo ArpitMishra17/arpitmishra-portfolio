@@ -44,11 +44,13 @@ const links = [
 export default function Contact() {
   return (
     <div>
-      <div
-        className="text-[11px] tracking-[2.5px] uppercase mb-6 flex justify-between items-center"
-        style={{ color: 'var(--dim)' }}
-      >
-        <span>Contact</span>
+      <div className="mb-10">
+        <h2
+          className="text-[32px] tracking-[3px] uppercase font-light"
+          style={{ color: 'var(--fg)' }}
+        >
+          Contact
+        </h2>
       </div>
 
       <div className="flex flex-col md:flex-row justify-between items-center py-5 gap-3 md:gap-0">

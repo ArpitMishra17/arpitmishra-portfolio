@@ -21,11 +21,13 @@ export default function Technologies() {
   return (
     <section className="py-20 border-b" style={{ borderColor: 'var(--border)' }} id="tech">
       <div className="max-w-[1060px] mx-auto px-5 md:px-8">
-        <div
-          className="text-[11px] tracking-[2.5px] uppercase mb-6 flex justify-between items-center"
-          style={{ color: 'var(--dim)' }}
-        >
-          <span>Technologies</span>
+        <div className="mb-10">
+          <h2
+            className="text-[32px] tracking-[3px] uppercase font-light"
+            style={{ color: 'var(--fg)' }}
+          >
+            Technologies
+          </h2>
         </div>
 
         <div

@@ -67,12 +67,14 @@ export default function Experience() {
   return (
     <section className="py-20 border-b" style={{ borderColor: 'var(--border)' }} id="experience">
       <div className="max-w-[1060px] mx-auto px-5 md:px-8">
-        <div
-          className="text-[11px] tracking-[2.5px] uppercase mb-6 flex justify-between items-center"
-          style={{ color: 'var(--dim)' }}
-        >
-          <span>Experience</span>
-          <span className="text-[12px]" style={{ color: 'var(--accent)' }}>7 roles</span>
+        <div className="mb-10">
+          <h2
+            className="text-[32px] tracking-[3px] uppercase font-light"
+            style={{ color: 'var(--fg)' }}
+          >
+            Experience
+          </h2>
+          <span className="text-[12px] mt-1 inline-block" style={{ color: 'var(--accent)' }}>7 roles</span>
         </div>
 
         <ScrollReveal stagger>
