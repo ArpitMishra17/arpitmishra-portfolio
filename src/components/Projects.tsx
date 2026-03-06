@@ -50,13 +50,13 @@ export default function Projects() {
 
         <ScrollReveal stagger>
           <div
-            className="flex flex-col"
+            className="grid grid-cols-1 md:grid-cols-2"
             style={{ gap: '1px', background: 'var(--border)', border: '1px solid var(--border)' }}
           >
             {projects.map((proj, i) => (
               <div
                 key={i}
-                className="reveal sweep-hover grid grid-cols-1 md:grid-cols-[180px_1fr_auto] gap-2 md:gap-5 p-5 px-6 items-start relative"
+                className="reveal sweep-hover flex flex-col gap-5 p-6 md:p-8 relative"
                 style={{ background: 'var(--bg2)' }}
                 onMouseEnter={e =>
                   (e.currentTarget.style.background =
@@ -64,27 +64,16 @@ export default function Projects() {
                 }
                 onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg2)')}
               >
-                <div
-                  className="text-[15px] flex items-center gap-2"
-                  style={{ color: 'var(--accent2)' }}
-                >
-                  {proj.name}
-                </div>
-                <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between gap-2">
                   <div
-                    className="text-[13px] leading-[1.5]"
-                    style={{ color: 'var(--dim)' }}
+                    className="text-[15px]"
+                    style={{ color: 'var(--accent2)' }}
                   >
-                    {renderLineBreaks(proj.desc)}
+                    {proj.name}
                   </div>
-                  <div className="text-[12px] opacity-80" style={{ color: 'var(--dim)' }}>
-                    {proj.tech}
-                  </div>
-                </div>
-                <div className="flex gap-2 self-start md:self-center">
                   <a
                     href="#"
-                    className="text-[12px] px-2.5 py-1 tracking-wider transition-all hover:no-underline"
+                    className="text-[12px] px-2.5 py-1 tracking-wider transition-all hover:no-underline shrink-0"
                     style={{
                       color: 'var(--dim)',
                       border: '1px solid var(--border)',
@@ -100,6 +89,17 @@ export default function Projects() {
                   >
                     source
                   </a>
+                </div>
+                <div className="flex flex-col gap-4">
+                  <div
+                    className="text-[13px] leading-[1.5]"
+                    style={{ color: 'var(--dim)' }}
+                  >
+                    {renderLineBreaks(proj.desc)}
+                  </div>
+                  <div className="text-[12px] opacity-80" style={{ color: 'var(--dim)' }}>
+                    {proj.tech}
+                  </div>
                 </div>
               </div>
             ))}
