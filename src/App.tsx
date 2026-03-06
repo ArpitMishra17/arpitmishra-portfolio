@@ -8,12 +8,12 @@ import Spotify from './components/Spotify'
 import Contact from './components/Contact'
 
 export default function App() {
-  const { toggle } = useTheme()
+  const { theme, toggle } = useTheme()
 
   return (
     <>
       <div className="grid-bg" />
-      <Nav onToggleTheme={toggle} />
+      <Nav theme={theme} onToggleTheme={toggle} />
       <Hero />
       <Experience />
       <Projects />
