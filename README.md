@@ -5,4 +5,3 @@
 - TypeScript
 - Vite
 - Tailwind CSS
-- Vercel
