@@ -85,7 +85,7 @@ export default function Experience() {
             {experiences.map((exp, i) => (
               <div
                 key={i}
-                className="reveal sweep-hover grid grid-cols-1 md:grid-cols-[160px_1fr] gap-5 p-5 px-6 items-start relative"
+                className="reveal sweep-hover flex flex-col gap-3 p-6 px-7 relative"
                 style={{ background: 'var(--bg2)' }}
                 onMouseEnter={e =>
                   (e.currentTarget.style.background =
@@ -99,25 +99,34 @@ export default function Experience() {
                     style={{ background: 'var(--accent)' }}
                   />
                 )}
-                <div className="text-[14px]" style={{ color: 'var(--fg)' }}>
-                  {exp.company}
-                </div>
-                <div className="flex flex-col gap-1">
-                  <div className="text-[16px]" style={{ color: 'var(--accent)' }}>
+                <div className="flex flex-wrap items-baseline gap-x-3">
+                  <span
+                    className="text-[22px] md:text-[26px] tracking-wider"
+                    style={{
+                      fontFamily: "'Geist Pixel', 'Geist Mono', monospace",
+                      color: 'var(--fg)',
+                    }}
+                  >
                     {exp.role}
-                  </div>
-                  <div
-                    className="text-[13px] tracking-wider pt-0.5"
-                    style={{ color: 'var(--dim)' }}
+                  </span>
+                  <span
+                    className="text-[15px] md:text-[18px] italic"
+                    style={{ color: 'var(--accent)' }}
                   >
-                    {exp.period}
-                  </div>
-                  <div
-                    className="text-[13px] leading-[1.7] mt-1"
-                    style={{ color: 'var(--dim)' }}
-                  >
-                    {renderLineBreaks(exp.desc)}
-                  </div>
+                    @ {exp.company}
+                  </span>
+                </div>
+                <div
+                  className="text-[12px] tracking-[2px] uppercase"
+                  style={{ color: 'var(--dim)' }}
+                >
+                  {exp.period}
+                </div>
+                <div
+                  className="text-[13px] leading-[1.7]"
+                  style={{ color: 'var(--dim)' }}
+                >
+                  {renderLineBreaks(exp.desc)}
                 </div>
               </div>
             ))}
