@@ -3,6 +3,7 @@ import AsciiShader from './AsciiShader'
 export default function Hero() {
   return (
     <section
+      id="hero"
       className="min-h-screen grid grid-cols-1 md:grid-cols-2 items-center border-b"
       style={{ borderColor: 'var(--border)' }}
     >

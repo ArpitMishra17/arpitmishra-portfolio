@@ -53,27 +53,22 @@ export default function Contact() {
         </h2>
       </div>
 
-      <div className="flex flex-col md:flex-row justify-between items-center py-5 gap-3 md:gap-0">
-        <div className="flex flex-wrap justify-center md:justify-start gap-6">
-          {links.map((link, i) => (
-            <a
-              key={i}
-              href={link.href}
-              className="text-[13px] transition-colors hover:no-underline"
-              style={{ color: 'var(--dim)' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--dim)')}
-            >
-              <span className="mr-1.5" style={{ color: 'var(--dim)' }}>
-                {link.icon}
-              </span>
-              {link.text}
-            </a>
-          ))}
-        </div>
-        <div className="text-[12px] tracking-wider opacity-50" style={{ color: 'var(--dim)' }}>
-          last updated 2026.03.05
-        </div>
+      <div className="flex flex-col items-center md:flex-row md:justify-center gap-4 md:gap-6 py-5">
+        {links.map((link, i) => (
+          <a
+            key={i}
+            href={link.href}
+            className="text-[13px] transition-colors hover:no-underline"
+            style={{ color: 'var(--dim)' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--dim)')}
+          >
+            <span className="mr-1.5" style={{ color: 'var(--dim)' }}>
+              {link.icon}
+            </span>
+            {link.text}
+          </a>
+        ))}
       </div>
     </div>
   )

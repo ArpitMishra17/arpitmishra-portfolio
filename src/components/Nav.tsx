@@ -15,12 +15,13 @@ export default function Nav({ theme, onToggleTheme }: NavProps) {
       }}
     >
       <div className="flex items-center" style={{ gap: '6px' }}>
-        <span
-          className="font-normal"
-          style={{ color: 'var(--fg)', fontFamily: "'Geist Pixel', monospace", letterSpacing: '1px' }}
+        <a
+          href="#hero"
+          className="font-normal hover:no-underline"
+          style={{ color: 'var(--fg)', fontFamily: "'Geist Pixel', monospace", letterSpacing: '1px', textDecoration: 'none' }}
         >
           arpit_mishra
-        </span>
+        </a>
         <span style={{ color: 'var(--border)' }}>/</span>
         <div className="hidden md:flex" style={{ gap: '2px' }}>
           {['experience', 'projects', 'tech', 'contact'].map(id => (
