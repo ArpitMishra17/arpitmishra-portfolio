@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import ScrollReveal from './ScrollReveal'
 
 const experiences = [
@@ -67,6 +68,12 @@ function renderBulletPoints(htmlLikeText: string) {
 }
 
 export default function Experience() {
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
+
+  const toggle = (i: number) => {
+    setExpandedIndex(prev => (prev === i ? null : i))
+  }
+
   return (
     <section className="py-20 border-b" style={{ borderColor: 'var(--border)' }} id="experience">
       <div className="max-w-[1060px] mx-auto px-5 md:px-8">
@@ -85,54 +92,85 @@ export default function Experience() {
             className="flex flex-col"
             style={{ gap: '1px', background: 'var(--border)', border: '1px solid var(--border)' }}
           >
-            {experiences.map((exp, i) => (
-              <div
-                key={i}
-                className="reveal sweep-hover flex flex-col gap-3 p-6 px-7 relative"
-                style={{ background: 'var(--bg2)' }}
-                onMouseEnter={e =>
-                  (e.currentTarget.style.background =
-                    'color-mix(in srgb, var(--bg2) 92%, var(--accent) 8%)')
-                }
-                onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg2)')}
-              >
-                {exp.current && (
+            {experiences.map((exp, i) => {
+              const isOpen = expandedIndex === i
+              return (
+                <div
+                  key={i}
+                  className="reveal sweep-hover flex flex-col gap-3 p-6 px-7 relative cursor-pointer select-none"
+                  style={{ background: 'var(--bg2)' }}
+                  onClick={() => toggle(i)}
+                  onMouseEnter={e =>
+                    (e.currentTarget.style.background =
+                      'color-mix(in srgb, var(--bg2) 92%, var(--accent) 8%)')
+                  }
+                  onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg2)')}
+                >
+                  {exp.current && (
+                    <div
+                      className="absolute top-0 left-0 w-[3px] h-full"
+                      style={{ background: 'var(--accent)' }}
+                    />
+                  )}
+                  <div className="flex items-baseline gap-x-3">
+                    <div className="flex flex-wrap items-baseline gap-x-3 flex-1">
+                      <span
+                        className="text-[22px] md:text-[26px] tracking-wider"
+                        style={{
+                          fontFamily: "'Geist Pixel', 'Geist Mono', monospace",
+                          color: 'var(--fg)',
+                        }}
+                      >
+                        {exp.role}
+                      </span>
+                      <span
+                        className="text-[15px] md:text-[18px] italic"
+                        style={{ color: 'var(--accent)' }}
+                      >
+                        @ {exp.company}
+                      </span>
+                    </div>
+                    <svg
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="shrink-0 transition-transform duration-300"
+                      style={{
+                        color: 'var(--dim)',
+                        transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                      }}
+                    >
+                      <polyline points="6 9 12 15 18 9" />
+                    </svg>
+                  </div>
                   <div
-                    className="absolute top-0 left-0 w-[3px] h-full"
-                    style={{ background: 'var(--accent)' }}
-                  />
-                )}
-                <div className="flex flex-wrap items-baseline gap-x-3">
-                  <span
-                    className="text-[22px] md:text-[26px] tracking-wider"
+                    className="text-[12px] tracking-[2px] uppercase"
+                    style={{ color: 'var(--dim)' }}
+                  >
+                    {exp.period}
+                  </div>
+                  <div
+                    className="overflow-hidden transition-all duration-300 ease-in-out"
                     style={{
-                      fontFamily: "'Geist Pixel', 'Geist Mono', monospace",
-                      color: 'var(--fg)',
+                      maxHeight: isOpen ? '500px' : '0px',
+                      opacity: isOpen ? 1 : 0,
                     }}
                   >
-                    {exp.role}
-                  </span>
-                  <span
-                    className="text-[15px] md:text-[18px] italic"
-                    style={{ color: 'var(--accent)' }}
-                  >
-                    @ {exp.company}
-                  </span>
+                    <div
+                      className="text-[15px] leading-[1.7] mt-1"
+                      style={{ color: 'var(--dim)' }}
+                    >
+                      {renderBulletPoints(exp.desc)}
+                    </div>
+                  </div>
                 </div>
-                <div
-                  className="text-[12px] tracking-[2px] uppercase"
-                  style={{ color: 'var(--dim)' }}
-                >
-                  {exp.period}
-                </div>
-                <div
-                  className="text-[13px] leading-[1.7] mt-1"
-                  style={{ color: 'var(--dim)' }}
-                >
-                  {renderBulletPoints(exp.desc)}
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </ScrollReveal>
       </div>
