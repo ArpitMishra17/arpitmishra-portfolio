@@ -3,17 +3,24 @@ import ScrollReveal from './ScrollReveal'
 
 const experiences = [
   {
+    company: 'Vyazen',
+    role: 'Software Development Engineer Intern',
+    period: 'May 2026 — Present',
+    current: true,
+    desc: 'Building a custom AI harness for large codebases and autonomous SDLC.',
+  },
+  {
     company: 'Zed',
     role: 'Open Source Contributor',
-    period: 'Mar 2026 — Present',
-    current: true,
+    period: 'Mar 2026 — May 2026',
+    current: false,
     desc: 'Accepted into the Zed Guild, where I collaborate with the core team to tackle real issues in an editor developed openly.<br/>Contributing to globally used developer features while strengthening my open-source contribution experience.',
   },
   {
-    company: 'airevo LABS',
+    company: 'Ealana',
     role: 'Software Engineering Intern',
-    period: 'Jan 2026 — Present',
-    current: true,
+    period: 'Jan 2026 — Jun 2026',
+    current: false,
     desc: 'Working as founding engineer on the core ATS platform.<br/>Architected the entire Whatsapp integration for parallel whatsapp and email communication.<br/>Integrated a custom knowledge graph system into the ATS platform.',
   },
   {
@@ -84,7 +91,7 @@ export default function Experience() {
           >
             Experience
           </h2>
-          <span className="text-[12px] mt-1 inline-block" style={{ color: 'var(--accent)' }}>7 roles</span>
+          <span className="text-[12px] mt-1 inline-block" style={{ color: 'var(--accent)' }}>8 roles</span>
         </div>
 
         <ScrollReveal stagger>
