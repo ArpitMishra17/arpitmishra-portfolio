@@ -46,7 +46,7 @@ export default function Contact() {
     <div>
       <div className="mb-10">
         <h2
-          className="text-[32px] tracking-[3px] uppercase font-light"
+          className="text-[clamp(24px,3vw,32px)] tracking-[3px] uppercase font-medium"
           style={{ color: 'var(--fg)' }}
         >
           Contact
@@ -58,7 +58,7 @@ export default function Contact() {
           <a
             key={i}
             href={link.href}
-            className="text-[13px] transition-colors hover:no-underline"
+            className="text-[13px] transition-colors hover:no-underline select-none"
             style={{ color: 'var(--dim)' }}
             onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
             onMouseLeave={e => (e.currentTarget.style.color = 'var(--dim)')}

@@ -40,7 +40,7 @@ export default function Projects() {
       <div className="max-w-[1060px] mx-auto px-5 md:px-8">
         <div className="mb-10">
           <h2
-            className="text-[32px] tracking-[3px] uppercase font-light"
+            className="text-[clamp(24px,3vw,32px)] tracking-[3px] uppercase font-medium"
             style={{ color: 'var(--fg)' }}
           >
             Projects

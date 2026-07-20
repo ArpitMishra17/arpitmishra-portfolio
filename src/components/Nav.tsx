@@ -6,7 +6,7 @@ interface NavProps {
 export default function Nav({ theme, onToggleTheme }: NavProps) {
   return (
     <nav
-      className="fixed top-0 left-0 right-0 z-[1000] flex justify-between items-center backdrop-blur-[12px] border-b transition-colors"
+      className="fixed top-0 left-0 right-0 z-[1000] flex justify-between items-center backdrop-blur-[12px] border-b transition-colors select-none"
       style={{
         background: 'color-mix(in srgb, var(--bg) 85%, transparent)',
         borderColor: 'var(--border)',
@@ -54,7 +54,7 @@ export default function Nav({ theme, onToggleTheme }: NavProps) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            transition: 'background 0.3s ease',
+            transition: 'background 0.15s ease',
           }}
         >
           {/* Sun icon */}
@@ -67,7 +67,7 @@ export default function Nav({ theme, onToggleTheme }: NavProps) {
               justifyContent: 'center',
               zIndex: 1,
               color: theme === 'light' ? '#fff' : 'var(--dim)',
-              transition: 'color 0.3s ease',
+              transition: 'color 0.15s ease',
             }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -92,7 +92,7 @@ export default function Nav({ theme, onToggleTheme }: NavProps) {
               justifyContent: 'center',
               zIndex: 1,
               color: theme === 'dark' ? '#fff' : 'var(--dim)',
-              transition: 'color 0.3s ease',
+              transition: 'color 0.15s ease',
             }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -109,7 +109,7 @@ export default function Nav({ theme, onToggleTheme }: NavProps) {
               height: '22px',
               borderRadius: '9999px',
               background: 'var(--accent)',
-              transition: 'left 0.3s ease',
+              transition: 'left 0.15s ease',
             }}
           />
         </button>

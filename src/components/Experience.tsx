@@ -86,7 +86,7 @@ export default function Experience() {
       <div className="max-w-[1060px] mx-auto px-5 md:px-8">
         <div className="mb-10">
           <h2
-            className="text-[32px] tracking-[3px] uppercase font-light"
+            className="text-[clamp(24px,3vw,32px)] tracking-[3px] uppercase font-medium"
             style={{ color: 'var(--fg)' }}
           >
             Experience
@@ -146,7 +146,7 @@ export default function Experience() {
                       strokeWidth="1.5"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className="shrink-0 transition-transform duration-300"
+                      className="shrink-0 transition-transform duration-150"
                       style={{
                         color: 'var(--dim)',
                         transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
@@ -162,7 +162,7 @@ export default function Experience() {
                     {exp.period}
                   </div>
                   <div
-                    className="overflow-hidden transition-all duration-300 ease-in-out"
+                    className="overflow-hidden transition-all duration-150 ease-in-out"
                     style={{
                       maxHeight: isOpen ? '500px' : '0px',
                       opacity: isOpen ? 1 : 0,

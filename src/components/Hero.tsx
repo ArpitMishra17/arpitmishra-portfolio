@@ -14,7 +14,7 @@ export default function Hero() {
       <div className="max-w-[530px] px-8 py-10 md:py-0">
         <div className="flex flex-col gap-5">
           <h1
-            className="text-[52px] font-normal tracking-wider leading-[1.15]"
+            className="text-[clamp(36px,5vw,52px)] font-normal tracking-wider leading-[1.15]"
             style={{ fontFamily: "'Geist Pixel', 'Geist Mono', monospace" }}
           >
             Hey, I'm Arpit !
@@ -33,7 +33,7 @@ export default function Hero() {
           <div className="flex gap-2.5 items-center mb-8">
             <a
               href="#"
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 text-[13px] tracking-wider transition-all hover:no-underline"
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 text-[13px] tracking-wider transition-all hover:no-underline select-none"
               style={{
                 background: 'none',
                 color: 'var(--fg)',
@@ -99,7 +99,7 @@ export default function Hero() {
                 href={link.href}
                 target={link.label !== 'email' ? '_blank' : undefined}
                 rel={link.label !== 'email' ? 'noopener noreferrer' : undefined}
-                className="transition-colors hover:no-underline"
+                className="transition-colors hover:no-underline select-none"
                 style={{ color: 'var(--dim)' }}
                 onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
                 onMouseLeave={e => (e.currentTarget.style.color = 'var(--dim)')}
