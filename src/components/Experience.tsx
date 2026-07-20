@@ -4,7 +4,7 @@ import ScrollReveal from './ScrollReveal'
 const experiences = [
   {
     company: 'Vyazen',
-    role: 'Software Development Engineer Intern',
+    role: 'Software Development Intern',
     period: 'May 2026 — Present',
     current: true,
     desc: 'Building a custom AI harness for large codebases and autonomous SDLC.',
@@ -39,7 +39,7 @@ const experiences = [
   },
   {
     company: 'K J Somaiya College of Engineering',
-    role: 'Machine Learning Research Intern',
+    role: 'ML Research Intern',
     period: 'Feb 2025 — Present',
     current: false,
     desc: 'Managing data pipelines for agricultural datasets, ensuring data quality for ML applications.<br/>Building and optimizing predictive ML models for accuracy and clarity.',
@@ -53,7 +53,7 @@ const experiences = [
   },
   {
     company: 'Secuodsoft Technologies',
-    role: 'Python Developer Intern',
+    role: 'Intern',
     period: 'Dec 2024',
     current: false,
     desc: 'Developed backend features using Django and MySQL.<br/>Implemented frontend components using JS and Bootstrap.<br/>Worked with static and media files for handling assets and uploads.',

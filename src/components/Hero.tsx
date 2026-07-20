@@ -13,44 +13,24 @@ export default function Hero() {
 
       <div className="max-w-[530px] px-8 py-10 md:py-0">
         <div className="flex flex-col gap-5">
-          <div className="text-[13px] tracking-wider" style={{ color: 'var(--dim)' }}>
-            {'// hello world'}
-          </div>
-
           <h1
             className="text-[52px] font-normal tracking-wider leading-[1.15]"
             style={{ fontFamily: "'Geist Pixel', 'Geist Mono', monospace" }}
           >
-            Arpit
-            <br />
-            Mishra
+            Hey, I'm Arpit !
           </h1>
 
           <div className="text-[16px] tracking-wider" style={{ color: 'var(--accent)' }}>
             software engineer
           </div>
 
-          <p className="leading-[1.8] text-[14px] max-w-[440px]" style={{ color: 'var(--dim)' }}>
-            I build software that works well and feels right. Full-stack web
-            applications, backend systems, and ai applications.
-            <br /><br />
-            I care about clean architecture, performance, and writing code that other people
-            can actually read.
+          <p className="leading-[1.8] text-[14px] max-w-[440px] mb-8 mt-8" style={{ color: 'var(--dim)' }}>
+            I like building software that's both technically interesting and thoughtfully designed.<br /><br />
+            Lately, I've been exploring AI applications, learning new technologies, and taking
+            on problems that keep me curious.
           </p>
 
-          <div className="flex items-center gap-2 text-[13px]" style={{ color: 'var(--green)' }}>
-            <span
-              className="w-1.5 h-1.5 rounded-full"
-              style={{
-                background: 'var(--green)',
-                boxShadow: '0 0 8px var(--green)',
-                animation: 'pulse 2s ease-in-out infinite',
-              }}
-            />
-            available for work
-          </div>
-
-          <div className="flex gap-2.5 items-center">
+          <div className="flex gap-2.5 items-center mb-8">
             <a
               href="#"
               className="inline-flex items-center gap-1.5 px-5 py-2.5 text-[13px] tracking-wider transition-all hover:no-underline"
