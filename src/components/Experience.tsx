@@ -14,14 +14,14 @@ const experiences = [
     role: 'Open Source Contributor',
     period: 'Mar 2026 — May 2026',
     current: false,
-    desc: 'Accepted into the Zed Guild, where I collaborate with the core team to tackle real issues in an editor developed openly.<br/>Contributing to globally used developer features while strengthening my open-source contribution experience.',
+    desc: 'Accepted into the Zed Guild, where I collaborated with the core team to tackle real issues in an editor developed openly.<br/>Contributed to globally used developer features while strengthening my open-source contribution experience.',
   },
   {
     company: 'Ealana',
     role: 'Software Engineering Intern',
     period: 'Jan 2026 — Jun 2026',
     current: false,
-    desc: 'Working as founding engineer on the core ATS platform.<br/>Architected the entire Whatsapp integration for parallel whatsapp and email communication.<br/>Integrated a custom knowledge graph system into the ATS platform.',
+    desc: 'Worked as founding engineer on the core ATS platform.<br/>Architected the entire Whatsapp integration for parallel whatsapp and email communication.<br/>Integrated a custom knowledge graph system into the ATS platform.',
   },
   {
     company: 'Aeternik',
@@ -42,7 +42,7 @@ const experiences = [
     role: 'ML Research Intern',
     period: 'Feb 2025 — Present',
     current: false,
-    desc: 'Managing data pipelines for agricultural datasets, ensuring data quality for ML applications.<br/>Building and optimizing predictive ML models for accuracy and clarity.',
+    desc: 'Managed data pipelines for agricultural datasets, ensuring data quality for ML applications.<br/>Built and optimized predictive ML models for accuracy and clarity.',
   },
   {
     company: 'SMLRA',
