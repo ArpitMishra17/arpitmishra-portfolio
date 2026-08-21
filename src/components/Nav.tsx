@@ -1,9 +1,20 @@
+import { Link, useLocation } from 'react-router-dom'
+
 interface NavProps {
   theme: 'dark' | 'light'
   onToggleTheme: () => void
 }
 
 export default function Nav({ theme, onToggleTheme }: NavProps) {
+  const location = useLocation()
+  const isHome = location.pathname === '/'
+
+  const navLinkStyle = (): React.CSSProperties => ({
+    color: 'var(--dim)',
+    padding: '4px 10px',
+    textDecoration: 'none',
+  })
+
   return (
     <nav
       className="fixed top-0 left-0 right-0 z-[1000] flex justify-between items-center backdrop-blur-[12px] border-b transition-colors select-none"
@@ -15,21 +26,21 @@ export default function Nav({ theme, onToggleTheme }: NavProps) {
       }}
     >
       <div className="flex items-center" style={{ gap: '6px' }}>
-        <a
-          href="#hero"
+        <Link
+          to="/"
           className="font-normal hover:no-underline"
           style={{ color: 'var(--fg)', fontFamily: "'Geist Pixel', monospace", letterSpacing: '1px', textDecoration: 'none' }}
         >
           arpit_mishra
-        </a>
+        </Link>
         <span style={{ color: 'var(--border)' }}>/</span>
         <div className="hidden md:flex" style={{ gap: '2px' }}>
-          {['experience', 'projects', 'tech', 'contact'].map(id => (
+          {['experience', 'projects', 'tech', 'blog', 'contact'].map(id => (
             <a
               key={id}
-              href={`#${id}`}
+              href={isHome ? `#${id}` : `/#${id}`}
               className="transition-colors hover:no-underline"
-              style={{ color: 'var(--dim)', padding: '4px 10px' }}
+              style={navLinkStyle()}
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--dim)')}
             >
@@ -39,6 +50,9 @@ export default function Nav({ theme, onToggleTheme }: NavProps) {
         </div>
       </div>
       <div className="flex items-center" style={{ gap: '10px' }}>
+        <a href={isHome ? '#blog' : '/#blog'} className="md:hidden text-xs tracking-wider hover:no-underline" style={{ color: 'var(--dim)', textDecoration: 'none' }}>
+          blog
+        </a>
         <button
           onClick={onToggleTheme}
           className="cursor-pointer"
@@ -57,7 +71,6 @@ export default function Nav({ theme, onToggleTheme }: NavProps) {
             transition: 'background 0.15s ease',
           }}
         >
-          {/* Sun icon */}
           <span
             style={{
               width: '22px',
@@ -82,7 +95,6 @@ export default function Nav({ theme, onToggleTheme }: NavProps) {
               <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
             </svg>
           </span>
-          {/* Moon icon */}
           <span
             style={{
               width: '22px',
@@ -99,7 +111,6 @@ export default function Nav({ theme, onToggleTheme }: NavProps) {
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
             </svg>
           </span>
-          {/* Sliding circle */}
           <span
             style={{
               position: 'absolute',
