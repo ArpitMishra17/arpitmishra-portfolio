@@ -1,7 +1,7 @@
 ---
 title: "I built a benchmark to find out which code graph actually understands your codebase"
 description: "While working on the code graph at Vyazen, I built CodeGraph-Bench on the side as an open source way to score code indexing tools against the TypeScript compiler. Here is what I found on BabylonJS and VS Code."
-publishedAt: "2026-04-21"
+publishedAt: "2026-08-21"
 image: "/images/blog/codegraph-bench.webp"
 author: "Arpit Mishra"
 ---
