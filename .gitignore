@@ -45,3 +45,4 @@ coverage
 *.sln
 *.sw?
 tui/.ssh/
+tui/tui
