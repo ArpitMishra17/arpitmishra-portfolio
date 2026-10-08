@@ -54,7 +54,6 @@ const LOGOS: Record<string, string> = {
 
 function ChartRow({ tool, value, repoLabel }: { tool: ToolData; value: number | null; repoLabel: string }) {
   const isNA = value === null
-  const width = isNA ? 0 : value
   const logo = LOGOS[tool.name]
   return (
     <div className="grid items-center gap-4 py-2.5" style={{ gridTemplateColumns: '110px minmax(0,1fr) 52px' }}>
@@ -74,12 +73,14 @@ function ChartRow({ tool, value, repoLabel }: { tool: ToolData; value: number | 
       </span>
       <div className="h-[4px] overflow-hidden rounded-full" style={{ background: 'var(--border)' }}>
         <div
-          className="h-full transition-[width] duration-500"
-          style={{
-            width: `${width}%`,
-            background: 'var(--dim)',
-            opacity: 0.9,
-          }}
+          className="metric-bar h-full rounded-full"
+          style={
+            {
+              '--v': isNA ? 0 : value / 100,
+              background: 'var(--dim)',
+              opacity: 0.9,
+            } as React.CSSProperties
+          }
         />
       </div>
       <span
@@ -122,7 +123,7 @@ function Chart({
                 type="button"
                 onClick={() => setRepo(r)}
                 aria-pressed={repo === r}
-                className="px-3 py-1.5 text-[11px] tracking-[1.5px] uppercase transition-colors"
+                className="px-3 py-1.5 text-[11px] tracking-[1.5px] uppercase transition-colors duration-200 pressable"
                 style={{
                   background: repo === r ? 'var(--accent)' : 'transparent',
                   color: repo === r ? 'var(--bg)' : 'var(--dim)',

@@ -22,6 +22,19 @@
   --red: #f87171;
   --border: #1a1a1f;
   --grid-dot: rgba(255, 255, 255, 0.06);
+
+  /* ─── Motion tokens ─── */
+  /* Strong custom curves. The built-in CSS easings are too weak. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --dur-press: 120ms;
+  --dur-ui: 200ms;
+  --dur-reveal: 250ms;
+
+  /* Hover tint shared by every grid cell */
+  --cell-hover: color-mix(in srgb, var(--bg2) 92%, var(--accent) 8%);
 }
 
 [data-theme="light"] {
@@ -42,6 +55,37 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* Fixed nav is ~45px tall; anchored sections need to clear it. */
+    scroll-padding-top: 60px;
+    /* Kills the grey/blue flash iOS Safari paints over tapped elements. */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Removes the tap delay — these never double-tap-zoom. */
+  a,
+  button,
+  [role='button'] {
+    touch-action: manipulation;
+  }
+
+  /* Text that is a control shouldn't be selectable. Content still is. */
+  button,
+  [role='button'],
+  summary {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* Only remove the ring for non-keyboard focus; :focus-visible still shows. */
+  :focus:not(:focus-visible) {
+    outline: none;
   }
 
   body {
@@ -53,8 +97,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    -webkit-text-size-adjust: 100%;
-    transition: background 0.4s, color 0.4s;
+    transition: background var(--dur-reveal) var(--ease-out), color var(--dur-reveal) var(--ease-out);
   }
 
   ::selection {
@@ -87,11 +130,66 @@
     background-size: 24px 24px;
   }
 
-  /* Reveal Animation */
+  /* ─── Press feedback ───
+     Every interactive element gets this. The interface confirms it heard you. */
+  .pressable {
+    transition: transform var(--dur-press) var(--ease-out);
+  }
+
+  .pressable:active {
+    transform: scale(0.97);
+  }
+
+  /* ─── Hover primitives ───
+     State changes are gated behind capability queries; the transitions are not.
+     Touch devices fake :hover and leave it latched after the first tap. */
+  .hover-accent {
+    color: var(--dim);
+    text-decoration: none;
+    transition: color var(--dur-ui) var(--ease-out);
+  }
+
+  .hover-cell {
+    background: var(--bg2);
+    transition: background var(--dur-ui) var(--ease-out);
+  }
+
+  .hover-outline {
+    background: none;
+    color: var(--fg);
+    border: 1px solid var(--border);
+    transition:
+      color var(--dur-ui) var(--ease-out),
+      border-color var(--dur-ui) var(--ease-out);
+  }
+
+  /* ─── Hover sweep ─── */
+  .sweep-hover {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .sweep-hover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 10%, transparent), transparent);
+    transform: translateX(-100%);
+    transition: transform 400ms var(--ease-out);
+    pointer-events: none;
+  }
+
+  /* ─── Scroll reveal ───
+     Delay rides on a custom property so reduced-motion can zero it cleanly. */
   .reveal {
+    --reveal-delay: 0s;
     opacity: 0;
     transform: translateY(8px);
-    transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+    transition:
+      opacity var(--dur-reveal) var(--ease-out) var(--reveal-delay),
+      transform var(--dur-reveal) var(--ease-out) var(--reveal-delay);
   }
 
   .reveal.visible {
@@ -99,52 +197,74 @@
     transform: translateY(0);
   }
 
-  .stagger .reveal:nth-child(1) { transition-delay: 0s; }
-  .stagger .reveal:nth-child(2) { transition-delay: 0.03s; }
-  .stagger .reveal:nth-child(3) { transition-delay: 0.06s; }
-  .stagger .reveal:nth-child(4) { transition-delay: 0.09s; }
-  .stagger .reveal:nth-child(5) { transition-delay: 0.12s; }
-  .stagger .reveal:nth-child(6) { transition-delay: 0.15s; }
-  .stagger .reveal:nth-child(7) { transition-delay: 0.18s; }
+  .stagger .reveal:nth-child(1) { --reveal-delay: 0s; }
+  .stagger .reveal:nth-child(2) { --reveal-delay: 0.03s; }
+  .stagger .reveal:nth-child(3) { --reveal-delay: 0.06s; }
+  .stagger .reveal:nth-child(4) { --reveal-delay: 0.09s; }
+  .stagger .reveal:nth-child(5) { --reveal-delay: 0.12s; }
+  .stagger .reveal:nth-child(6) { --reveal-delay: 0.15s; }
+  .stagger .reveal:nth-child(7) { --reveal-delay: 0.18s; }
+  .stagger .reveal:nth-child(8) { --reveal-delay: 0.21s; }
 
-  /* Hover sweep effect */
-  .sweep-hover {
-    position: relative;
+  /* ─── Accordion ───
+     0fr → 1fr is content-accurate; max-height needs a magic number and clips. */
+  .accordion {
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    transition:
+      grid-template-rows var(--dur-ui) var(--ease-out),
+      opacity var(--dur-ui) var(--ease-out);
+  }
+
+  .accordion[data-open='true'] {
+    grid-template-rows: 1fr;
+    opacity: 1;
+  }
+
+  .accordion > * {
     overflow: hidden;
-    transition: background 0.15s;
+    min-height: 0;
   }
 
-  .sweep-hover::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.03), transparent);
-    transition: left 0.2s;
-    pointer-events: none;
+  /* ─── Theme toggle knob ───
+     transform, not left — this must not trigger layout. */
+  .theme-knob {
+    transition: transform var(--dur-ui) var(--ease-out);
   }
 
-  .sweep-hover:hover::after {
-    left: 100%;
+  /* ─── Scroll-driven bars ───
+     scaleX instead of width: no layout per frame. */
+  .bar-scale {
+    transform-origin: left center;
+    will-change: transform;
+  }
+
+  /* ─── Benchmark metric bar ───
+     Value arrives as --v so the same transform serves enter and update. */
+  .metric-bar {
+    --v: 0;
+    transform: scaleX(var(--v));
+    transform-origin: left center;
+    animation: barGrow 400ms var(--ease-out);
+    transition: transform var(--dur-reveal) var(--ease-out);
   }
 }
 
 /* ─── Animations (unlayered is fine — keyframes don't conflict) ─── */
-@keyframes pulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 4px var(--green); }
-  50% { opacity: 0.4; box-shadow: 0 0 12px var(--green); }
-}
-
 @keyframes eqBar {
   0%, 100% { transform: scaleY(1); }
   50% { transform: scaleY(0.3); }
 }
 
-@keyframes progressScrub {
-  from { width: 0%; }
-  to { width: 100%; }
+@keyframes scrub {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Implicit `to` is the element's own transform — no magic number. */
+@keyframes barGrow {
+  from { transform: scaleX(0); }
 }
 
 /* ─── Scrollbar ─── */
@@ -159,5 +279,83 @@
 
   ::-webkit-scrollbar-thumb {
     background: var(--border);
+  }
+}
+
+/* ─── Hover gating ───
+   All state changes live here so touch devices never latch a hover. */
+@media (hover: hover) and (pointer: fine) {
+  .hover-accent:hover {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .hover-cell:hover {
+    background: var(--cell-hover);
+  }
+
+  .hover-outline:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+    text-decoration: none;
+  }
+
+  .sweep-hover:hover::after {
+    transform: translateX(100%);
+  }
+}
+
+/* ─── Reduced motion ───
+   Fewer and gentler, not zero: keep opacity and colour, drop movement. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  /* Reveal still cross-fades — it just stops moving and stops staggering. */
+  .reveal,
+  .stagger .reveal:nth-child(1),
+  .stagger .reveal:nth-child(2),
+  .stagger .reveal:nth-child(3),
+  .stagger .reveal:nth-child(4),
+  .stagger .reveal:nth-child(5),
+  .stagger .reveal:nth-child(6),
+  .stagger .reveal:nth-child(7),
+  .stagger .reveal:nth-child(8) {
+    --reveal-delay: 0s;
+    transform: none;
+    transition: opacity 150ms linear;
+  }
+
+  .reveal.visible {
+    transform: none;
+  }
+
+  /* Collapse becomes an instant show/hide rather than a slow growth. */
+  .accordion {
+    transition: opacity 120ms linear;
+  }
+
+  .pressable:active {
+    transform: none;
+  }
+
+  .sweep-hover::after {
+    display: none;
+  }
+
+  .theme-knob,
+  .metric-bar {
+    transition: none;
+  }
+
+  /* Infinite decorative loops stop entirely. */
+  .eq-bar {
+    animation: none;
+  }
+
+  .scrub-bar {
+    animation: none;
+    transform: scaleX(1);
   }
 }

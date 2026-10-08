@@ -26,10 +26,8 @@ export default function Blog() {
               <Link
                 key={post.slug}
                 to={`/blog/${post.slug}`}
-                className="group block p-6 md:p-7 transition-colors"
-                style={{ background: 'var(--bg2)', textDecoration: 'none' }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'color-mix(in srgb, var(--bg2) 92%, var(--accent) 8%)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg2)')}
+                className="block p-6 md:p-7 hover-cell pressable"
+                style={{ textDecoration: 'none' }}
               >
                 <div className="flex flex-col gap-3">
                   <div className="flex flex-wrap items-center gap-3">

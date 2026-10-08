@@ -2,13 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover is what makes env(safe-area-inset-*) return anything but 0 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Arpit Mishra</title>
+    <meta name="description" content="Software engineer building technically interesting, thoughtfully designed software. Experience, projects, and notes on code graphs and benchmarks." />
     <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="preload" href="/fonts/GeistPixel-Square.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/GeistPixel-Square.woff2" as="font" type="font-woff2" crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet" />
+    <!-- The app has its own theme toggle and defaults to dark regardless of the
+         OS setting, so this is unconditioned and rewritten by useTheme.ts.
+         Remove the media attribute from the selector there if you ever drop the
+         in-app toggle in favour of the OS preference. -->
+    <meta name="theme-color" content="#08080a" />
+    <meta name="color-scheme" content="dark light" />
   </head>
   <body>
     <div id="root"></div>

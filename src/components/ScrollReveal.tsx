@@ -13,15 +13,27 @@ export default function ScrollReveal({ children, className = '', stagger = false
     const el = ref.current
     if (!el) return
 
+    // Reveal immediately where IntersectionObserver is unavailable or the user
+    // has asked for reduced motion — hidden content that never appears is worse
+    // than no animation at all.
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduceMotion || typeof IntersectionObserver === 'undefined') {
+      el.querySelectorAll('.reveal').forEach(r => r.classList.add('visible'))
+      return
+    }
+
     const observer = new IntersectionObserver(
       entries => {
         entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('visible')
-          }
+          if (!entry.isIntersecting) return
+          entry.target.classList.add('visible')
+          // Reveal is a one-shot entrance; stop observing once fired.
+          observer.unobserve(entry.target)
         })
       },
-      { threshold: 0.1 }
+      // Fires slightly before the element is fully on screen, so content is
+      // already settled by the time it's readable.
+      { rootMargin: '0px 0px -10% 0px', threshold: 0.05 }
     )
 
     const reveals = el.querySelectorAll('.reveal')

@@ -38,16 +38,10 @@ export function TableOfContents({ items, className, showHeader = true }: Props) 
             <li key={item.slug} className={indentClass}>
               <a
                 href={`#${item.slug}`}
-                className="flex items-center gap-2 py-1 text-[13px] leading-snug transition-colors"
+                className={`flex items-center gap-2 py-1 text-[13px] leading-snug tabular-nums transition-colors duration-200 pressable ${isActive ? '' : 'hover:text-[var(--fg)]'}`}
                 style={{
                   color: isActive ? 'var(--accent)' : 'var(--dim)',
                   textDecoration: 'none',
-                }}
-                onMouseEnter={e => {
-                  if (!isActive) e.currentTarget.style.color = 'var(--fg)'
-                }}
-                onMouseLeave={e => {
-                  if (!isActive) e.currentTarget.style.color = 'var(--dim)'
                 }}
               >
                 <span className="shrink-0 text-[10px]" style={{ color: isActive ? 'var(--accent)' : 'var(--border)' }}>

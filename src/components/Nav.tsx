@@ -5,15 +5,15 @@ interface NavProps {
   onToggleTheme: () => void
 }
 
+const SECTIONS = ['experience', 'projects', 'tech', 'blog', 'contact']
+
 export default function Nav({ theme, onToggleTheme }: NavProps) {
   const location = useLocation()
   const isHome = location.pathname === '/'
 
-  const navLinkStyle = (): React.CSSProperties => ({
-    color: 'var(--dim)',
-    padding: '4px 10px',
-    textDecoration: 'none',
-  })
+  // Router <Link> instead of <a href="/#id">, which forces a full page reload
+  // when clicked from a blog post.
+  const sectionHref = (id: string) => (isHome ? `#${id}` : `/#${id}`)
 
   return (
     <nav
@@ -28,34 +28,30 @@ export default function Nav({ theme, onToggleTheme }: NavProps) {
       <div className="flex items-center" style={{ gap: '6px' }}>
         <Link
           to="/"
-          className="font-normal hover:no-underline"
+          className="pressable hover:no-underline"
           style={{ color: 'var(--fg)', fontFamily: "'Geist Pixel', monospace", letterSpacing: '1px', textDecoration: 'none' }}
         >
           arpit_mishra
         </Link>
-        <span style={{ color: 'var(--border)' }}>/</span>
+        <span aria-hidden="true" style={{ color: 'var(--border)' }}>
+          /
+        </span>
         <div className="hidden md:flex" style={{ gap: '2px' }}>
-          {['experience', 'projects', 'tech', 'blog', 'contact'].map(id => (
-            <a
-              key={id}
-              href={isHome ? `#${id}` : `/#${id}`}
-              className="transition-colors hover:no-underline"
-              style={navLinkStyle()}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--dim)')}
-            >
+          {SECTIONS.map(id => (
+            <Link key={id} to={sectionHref(id)} className="pressable hover-accent" style={{ padding: '4px 10px' }}>
               {id}
-            </a>
+            </Link>
           ))}
         </div>
       </div>
       <div className="flex items-center" style={{ gap: '10px' }}>
-        <a href={isHome ? '#blog' : '/#blog'} className="md:hidden text-xs tracking-wider hover:no-underline" style={{ color: 'var(--dim)', textDecoration: 'none' }}>
+        <Link to={sectionHref('blog')} className="pressable hover-accent md:hidden text-xs tracking-wider" style={{ padding: '4px 10px' }}>
           blog
-        </a>
+        </Link>
         <button
+          type="button"
           onClick={onToggleTheme}
-          className="cursor-pointer"
+          className="pressable cursor-pointer"
           aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
           style={{
             position: 'relative',
@@ -68,10 +64,11 @@ export default function Nav({ theme, onToggleTheme }: NavProps) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            transition: 'background 0.15s ease',
+            transition: 'background var(--dur-ui) var(--ease-out)',
           }}
         >
           <span
+            aria-hidden="true"
             style={{
               width: '22px',
               height: '22px',
@@ -80,7 +77,7 @@ export default function Nav({ theme, onToggleTheme }: NavProps) {
               justifyContent: 'center',
               zIndex: 1,
               color: theme === 'light' ? '#fff' : 'var(--dim)',
-              transition: 'color 0.15s ease',
+              transition: 'color var(--dur-ui) var(--ease-out)',
             }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -88,14 +85,15 @@ export default function Nav({ theme, onToggleTheme }: NavProps) {
               <line x1="12" y1="1" x2="12" y2="3" />
               <line x1="12" y1="21" x2="12" y2="23" />
               <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
-              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="18.36" y1="18.36" x2="19.79" y2="19.79" />
               <line x1="1" y1="12" x2="3" y2="12" />
               <line x1="21" y1="12" x2="23" y2="12" />
               <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
-              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+              <line x1="18.36" y1="5.64" x2="19.79" y2="4.22" />
             </svg>
           </span>
           <span
+            aria-hidden="true"
             style={{
               width: '22px',
               height: '22px',
@@ -104,23 +102,26 @@ export default function Nav({ theme, onToggleTheme }: NavProps) {
               justifyContent: 'center',
               zIndex: 1,
               color: theme === 'dark' ? '#fff' : 'var(--dim)',
-              transition: 'color 0.15s ease',
+              transition: 'color var(--dur-ui) var(--ease-out)',
             }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
             </svg>
           </span>
+          {/* transform, not left — a layout-animated knob drops frames */}
           <span
+            aria-hidden="true"
+            className="theme-knob"
             style={{
               position: 'absolute',
               top: '3px',
-              left: theme === 'light' ? '3px' : '31px',
+              left: '3px',
               width: '22px',
               height: '22px',
               borderRadius: '9999px',
               background: 'var(--accent)',
-              transition: 'left 0.15s ease',
+              transform: theme === 'light' ? 'translateX(0)' : 'translateX(28px)',
             }}
           />
         </button>

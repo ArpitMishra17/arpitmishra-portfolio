@@ -25,7 +25,7 @@ export default function Spotify() {
             {[60, 100, 40, 80, 50].map((h, i) => (
               <div
                 key={i}
-                className="w-[3px] rounded-[1px]"
+                className="w-[3px] rounded-[1px] eq-bar"
                 style={{
                   background: 'var(--green)',
                   height: `${h}%`,
@@ -65,10 +65,10 @@ export default function Spotify() {
               style={{ background: 'var(--border)' }}
             >
               <div
-                className="h-full rounded-[1px]"
+                className="w-full h-full rounded-[1px] scrub-bar bar-scale"
                 style={{
                   background: 'var(--green)',
-                  animation: 'progressScrub 12s linear infinite',
+                  animation: 'scrub 12s linear infinite',
                 }}
               />
             </div>
@@ -86,7 +86,7 @@ export default function Spotify() {
           {recentTracks.map((track, i) => (
             <div
               key={i}
-              className="flex justify-between items-center py-2 text-[13px] transition-all hover:pl-1.5"
+              className="hover-cell flex justify-between items-center py-2 text-[13px] transition-[transform,background] duration-200 hover:translate-x-1.5"
               style={{
                 borderBottom: i < recentTracks.length - 1 ? '1px solid var(--border)' : 'none',
               }}
@@ -97,7 +97,7 @@ export default function Spotify() {
                   {track.artist}
                 </div>
               </div>
-              <div className="text-[12px] shrink-0" style={{ color: 'var(--dim)' }}>
+              <div className="font-mono tabular-nums text-[12px] shrink-0" style={{ color: 'var(--dim)' }}>
                 {track.time}
               </div>
             </div>

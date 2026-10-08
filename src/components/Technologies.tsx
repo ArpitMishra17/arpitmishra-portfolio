@@ -37,13 +37,7 @@ export default function Technologies() {
           {techGroups.map((group, i) => (
             <div
               key={i}
-              className="p-5 transition-colors"
-              style={{ background: 'var(--bg2)' }}
-              onMouseEnter={e =>
-                (e.currentTarget.style.background =
-                  'color-mix(in srgb, var(--bg2) 92%, var(--accent) 8%)')
-              }
-              onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg2)')}
+              className="p-5 hover-cell"
             >
               <div
                 className="text-[11px] tracking-[1.5px] uppercase mb-3"
@@ -55,17 +49,8 @@ export default function Technologies() {
                 {group.items.map(item => (
                   <div
                     key={item}
-                    className="text-[14px] py-0.5 cursor-default transition-colors"
-                    style={{ color: 'var(--fg)' }}
-                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
-                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg)')}
+                    className="hover-accent text-[14px] py-0.5 cursor-default"
                   >
-                    <span
-                      className="transition-colors"
-                      style={{ color: 'var(--border)' }}
-                    >
-                      →{' '}
-                    </span>
                     {item}
                   </div>
                 ))}

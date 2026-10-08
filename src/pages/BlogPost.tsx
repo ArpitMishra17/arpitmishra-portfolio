@@ -10,8 +10,11 @@ export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>()
   const post = slug ? getPostBySlug(slug) : undefined
 
+  // Reset scroll on post change. useHashScroll in App handles the top-of-page
+  // case for us, but that effect runs on location change which fires before
+  // the new post's height is laid out — this one runs after render.
   useEffect(() => {
-    window.scrollTo(0, 0)
+    window.scrollTo({ top: 0, behavior: 'instant' })
   }, [slug])
 
   useEffect(() => {
@@ -26,11 +29,11 @@ export default function BlogPost() {
 
   if (!post) {
     return (
-      <main className="max-w-[1060px] mx-auto px-5 md:px-8 pt-20 pb-16 min-h-screen">
+      <main className="max-w-[1060px] mx-auto px-5 md:px-8 pt-20 pb-16 min-h-[100svh]">
         <p className="text-[14px]" style={{ color: 'var(--dim)' }}>
           Post not found.
         </p>
-        <Link to="/#blog" className="text-[13px] mt-4 inline-block" style={{ color: 'var(--accent)' }}>
+        <Link to="/#blog" className="inline-block mt-4 text-[13px] pressable hover-accent" style={{ color: 'var(--accent)' }}>
           ← all posts
         </Link>
       </main>
@@ -47,16 +50,14 @@ export default function BlogPost() {
   return (
     <>
       <ReadingProgress />
-      <main id="main" className="min-h-screen border-b" style={{ borderColor: 'var(--border)' }}>
+      <main id="main" className="min-h-[100svh] border-b" style={{ borderColor: 'var(--border)' }}>
         <div className="max-w-[1060px] mx-auto px-5 md:px-8 pt-16 sm:pt-20 pb-16">
           <article id="top">
             <div className="mb-8">
               <Link
                 to="/#blog"
-                className="text-[12px] tracking-wider inline-flex items-center gap-1.5"
-                style={{ color: 'var(--dim)', textDecoration: 'none' }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'var(--dim)')}
+                className="pressable hover-accent inline-flex items-center gap-1.5 text-[12px] tracking-wider"
+                style={{ textDecoration: 'none' }}
               >
                 ← all posts
               </Link>
@@ -67,10 +68,10 @@ export default function BlogPost() {
                 <span className="text-[11px] tracking-[2px] uppercase" style={{ color: 'var(--dim)' }}>
                   {formatDate(post.publishedAt)}
                 </span>
-                <span className="text-[11px]" style={{ color: 'var(--border)' }}>
+                <span aria-hidden="true" className="text-[11px]" style={{ color: 'var(--border)' }}>
                   ·
                 </span>
-                <span className="text-[11px] tracking-[1.5px] uppercase" style={{ color: 'var(--dim)' }}>
+                <span className="text-[11px] tracking-[1.5px] uppercase tabular-nums" style={{ color: 'var(--dim)' }}>
                   {post.readTime} min read
                 </span>
               </div>
@@ -87,7 +88,7 @@ export default function BlogPost() {
               </p>
 
               <div className="mt-6 flex items-center gap-2 text-[12px]" style={{ color: 'var(--dim)' }}>
-                <span className="w-[5px] h-[5px] rounded-full shrink-0" style={{ background: 'var(--accent)' }} />
+                <span aria-hidden="true" className="w-[5px] h-[5px] rounded-full shrink-0" style={{ background: 'var(--accent)' }} />
                 <span>{post.author}</span>
               </div>
             </header>
@@ -104,8 +105,12 @@ export default function BlogPost() {
               <details className="lg:hidden mb-8 group" style={{ border: '1px solid var(--border)', background: 'var(--bg2)' }}>
                 <summary className="list-none cursor-pointer flex items-center justify-between px-6 py-4 text-[11px] tracking-[1.5px] uppercase" style={{ color: 'var(--dim)' }}>
                   <span>On this page</span>
-                  <span className="text-[12px] transition-transform group-open:rotate-180" style={{ color: 'var(--dim)' }}>
-                    ↓
+                  <span
+                    aria-hidden="true"
+                    className="text-[12px]"
+                    style={{ color: 'var(--dim)', transition: 'transform var(--dur-ui) var(--ease-out)' }}
+                  >
+                    <span className="inline-block group-open:rotate-180">↓</span>
                   </span>
                 </summary>
                 <div className="px-6 pb-5 pt-2" style={{ borderTop: '1px solid var(--border)' }}>
@@ -122,7 +127,10 @@ export default function BlogPost() {
 
               {toc.length > 1 && (
                 <aside className="hidden lg:block">
-                  <div className="sticky top-20 p-5 max-h-[calc(100vh-5rem)] overflow-y-auto" style={{ border: '1px solid var(--border)', background: 'var(--bg2)' }}>
+                  <div
+                    className="sticky top-20 p-5 max-h-[calc(100dvh-5rem)] overflow-y-auto"
+                    style={{ border: '1px solid var(--border)', background: 'var(--bg2)', overscrollBehavior: 'contain' }}
+                  >
                     <TableOfContents items={toc} />
                   </div>
                 </aside>
@@ -132,14 +140,15 @@ export default function BlogPost() {
 
           {(prevPost || nextPost) && (
             <nav aria-label="Adjacent posts" className="mt-12">
-              <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: '1px', background: 'var(--border)', border: '1px solid var(--border)' }}>
+              <div
+                className="grid grid-cols-1 sm:grid-cols-2"
+                style={{ gap: '1px', background: 'var(--border)', border: '1px solid var(--border)' }}
+              >
                 {prevPost ? (
                   <Link
                     to={`/blog/${prevPost.slug}`}
-                    className="group block p-6 transition-colors"
-                    style={{ background: 'var(--bg2)', textDecoration: 'none' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'color-mix(in srgb, var(--bg2) 92%, var(--accent) 8%)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg2)')}
+                    className="block p-6 hover-cell pressable"
+                    style={{ textDecoration: 'none' }}
                   >
                     <span className="text-[11px] tracking-[1.5px] uppercase flex items-center gap-1.5 mb-2" style={{ color: 'var(--dim)' }}>
                       ← older
@@ -149,17 +158,18 @@ export default function BlogPost() {
                     </span>
                   </Link>
                 ) : (
-                  <div className="hidden sm:block" style={{ background: 'var(--bg2)' }} />
+                  <div aria-hidden="true" className="hidden sm:block" style={{ background: 'var(--bg2)' }} />
                 )}
                 {nextPost ? (
                   <Link
                     to={`/blog/${nextPost.slug}`}
-                    className="group block p-6 sm:text-right transition-colors"
-                    style={{ background: 'var(--bg2)', textDecoration: 'none' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'color-mix(in srgb, var(--bg2) 92%, var(--accent) 8%)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg2)')}
+                    className="block p-6 sm:text-right hover-cell pressable"
+                    style={{ textDecoration: 'none' }}
                   >
-                    <span className="text-[11px] tracking-[1.5px] uppercase flex items-center gap-1.5 sm:justify-end mb-2" style={{ color: 'var(--dim)' }}>
+                    <span
+                      className="text-[11px] tracking-[1.5px] uppercase flex items-center gap-1.5 sm:justify-end mb-2"
+                      style={{ color: 'var(--dim)' }}
+                    >
                       newer →
                     </span>
                     <span className="text-[14px] leading-[1.5]" style={{ color: 'var(--fg)' }}>
@@ -167,27 +177,15 @@ export default function BlogPost() {
                     </span>
                   </Link>
                 ) : (
-                  <div className="hidden sm:block" style={{ background: 'var(--bg2)' }} />
+                  <div aria-hidden="true" className="hidden sm:block" style={{ background: 'var(--bg2)' }} />
                 )}
               </div>
 
-              <div className="mt-6 flex items-center justify-between">
-                <Link
-                  to="/#blog"
-                  className="text-[12px] tracking-wider"
-                  style={{ color: 'var(--dim)', textDecoration: 'none' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--dim)')}
-                >
+              <div className="mt-6 flex items-center justify-between gap-4">
+                <Link to="/#blog" className="pressable hover-accent text-[12px] tracking-wider" style={{ textDecoration: 'none' }}>
                   ← all posts
                 </Link>
-                <a
-                  href="#top"
-                  className="text-[12px] tracking-wider"
-                  style={{ color: 'var(--dim)', textDecoration: 'none' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--dim)')}
-                >
+                <a href="#top" className="pressable hover-accent text-[12px] tracking-wider" style={{ textDecoration: 'none' }}>
                   back to top ↑
                 </a>
               </div>

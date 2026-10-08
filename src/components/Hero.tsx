@@ -4,7 +4,7 @@ export default function Hero() {
   return (
     <section
       id="hero"
-      className="min-h-screen grid grid-cols-1 md:grid-cols-2 items-center border-b"
+      className="min-h-[100svh] grid grid-cols-1 md:grid-cols-2 items-center border-b"
       style={{ borderColor: 'var(--border)' }}
     >
       <div className="relative overflow-hidden w-full h-full hidden md:flex items-center justify-center">
@@ -33,20 +33,7 @@ export default function Hero() {
           <div className="flex gap-2.5 items-center mb-8">
             <a
               href="#"
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 text-[13px] tracking-wider transition-all hover:no-underline select-none"
-              style={{
-                background: 'none',
-                color: 'var(--fg)',
-                border: '1px solid var(--border)',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = 'var(--accent)'
-                e.currentTarget.style.color = 'var(--accent)'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = 'var(--border)'
-                e.currentTarget.style.color = 'var(--fg)'
-              }}
+              className="hover-outline pressable inline-flex items-center gap-1.5 px-5 py-2.5 text-[13px] tracking-wider select-none"
             >
               <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6z" />
@@ -99,10 +86,8 @@ export default function Hero() {
                 href={link.href}
                 target={link.label !== 'email' ? '_blank' : undefined}
                 rel={link.label !== 'email' ? 'noopener noreferrer' : undefined}
-                className="transition-colors hover:no-underline select-none"
-                style={{ color: 'var(--dim)' }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'var(--dim)')}
+                aria-label={link.label}
+                className="hover-accent pressable"
               >
                 {link.icon}
               </a>

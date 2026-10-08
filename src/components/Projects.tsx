@@ -56,13 +56,7 @@ export default function Projects() {
             {projects.map((proj, i) => (
               <div
                 key={i}
-                className="reveal sweep-hover flex flex-col gap-5 p-6 md:p-8 relative"
-                style={{ background: 'var(--bg2)' }}
-                onMouseEnter={e =>
-                  (e.currentTarget.style.background =
-                    'color-mix(in srgb, var(--bg2) 92%, var(--accent) 8%)')
-                }
-                onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg2)')}
+                className="reveal sweep-hover hover-cell flex flex-col gap-5 p-6 md:p-8 relative"
               >
                 <div className="flex items-center justify-between gap-2">
                   <div
@@ -73,19 +67,7 @@ export default function Projects() {
                   </div>
                   <a
                     href="#"
-                    className="text-[12px] px-2.5 py-1 tracking-wider transition-all hover:no-underline shrink-0"
-                    style={{
-                      color: 'var(--dim)',
-                      border: '1px solid var(--border)',
-                    }}
-                    onMouseEnter={e => {
-                      e.currentTarget.style.borderColor = 'var(--accent)'
-                      e.currentTarget.style.color = 'var(--accent)'
-                    }}
-                    onMouseLeave={e => {
-                      e.currentTarget.style.borderColor = 'var(--border)'
-                      e.currentTarget.style.color = 'var(--dim)'
-                    }}
+                    className="hover-outline pressable text-[12px] px-2.5 py-1 tracking-wider shrink-0"
                   >
                     source
                   </a>
