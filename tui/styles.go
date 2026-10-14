@@ -81,16 +81,22 @@ var (
 	stBullet  = lipgloss.NewStyle().Foreground(cAccent2)
 )
 
-// applyTheme swaps the global palette by name.
+// applyTheme swaps the global palette by name. Callers hold renderMu.
 func applyTheme(name string) {
+	t := themeByName(name)
+	activeTheme = t.name
+	activeColors = t
+	setColors(t)
+}
+
+// themeByName looks a theme up, falling back to the default.
+func themeByName(name string) theme {
 	for _, t := range themes {
 		if t.name == name {
-			activeTheme = t.name
-			activeColors = t
-			setColors(t)
-			return
+			return t
 		}
 	}
+	return themes[0]
 }
 
 // setColors assigns the color vars and rebuilds the derived styles.
@@ -166,11 +172,10 @@ func eqBars(tick, width int) string {
 
 var ansiRe = regexp.MustCompile("\x1b\\[[0-9;?]*[a-zA-Z]|\x1b\\][^\x07\x1b]*(\x07|\x1b\\\\)")
 
-// blogStyle derives a glamour markdown style from the active palette so the
-// blog post follows the theme like every other surface. It starts from the
-// stock dark.json (for margins/formatting) and recolors the key elements.
-func blogStyle() ansi.StyleConfig {
-	c := activeColors
+// blogStyle derives a glamour markdown style from a palette so the blog post
+// follows the theme like every other surface. It starts from the stock
+// dark.json (for margins/formatting) and recolors the key elements.
+func blogStyle(c theme) ansi.StyleConfig {
 	sp := func(s string) *string { return &s }
 
 	var cfg ansi.StyleConfig

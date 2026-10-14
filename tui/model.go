@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -10,6 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/termenv"
 )
 
 type section int
@@ -44,6 +46,12 @@ type model struct {
 	sec           section
 	width, height int
 	session       int
+
+	// Per-session look: each visitor gets their own theme and the colour
+	// profile their terminal supports. View applies both to the shared
+	// palette globals while it renders (see renderMu).
+	theme   string
+	profile termenv.Profile
 
 	expSel, projSel int
 
@@ -81,17 +89,18 @@ type blogRenderedMsg struct {
 	width   int
 }
 
-func newModel(md string, session int) model {
+func newModel(md string, session int, profile termenv.Profile) model {
 	vp := viewport.New(78, 20)
 	return model{
 		blogMD: md, blogVP: vp, typing: true, session: session,
-		committedTheme: activeTheme,
+		theme: themes[0].name, profile: profile,
+		committedTheme: themes[0].name,
 		ssText: "ssh arpitmishra.dev", ssVX: 2, ssVY: 1,
 	}
 }
 
 func newProgram(md string, session int) *tea.Program {
-	return tea.NewProgram(newModel(md, session), tea.WithAltScreen())
+	return tea.NewProgram(newModel(md, session, lipgloss.ColorProfile()), tea.WithAltScreen())
 }
 
 func animTick() tea.Cmd {
@@ -153,7 +162,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "t":
 			m.modal = modalTheme
 			m.mFilter, m.mSel = "", 0
-			m.committedTheme = activeTheme
+			m.committedTheme = m.theme
 		case "z":
 			m.ssOn = true
 			m.ssX, m.ssY = 4, 2
@@ -214,7 +223,7 @@ func (m model) updateModal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "esc":
 		if m.modal == modalTheme {
-			applyTheme(m.committedTheme) // revert preview
+			m.theme = m.committedTheme // revert preview
 		}
 		m.modal = modalNone
 	case "ctrl+c":
@@ -222,7 +231,7 @@ func (m model) updateModal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "enter":
 		if m.modal == modalTheme && len(items) > 0 {
 			m.committedTheme = items[clamp(m.mSel, 0, len(items)-1)]
-			applyTheme(m.committedTheme)
+			m.theme = m.committedTheme
 			m.modal = modalNone
 			// re-render the blog markdown in the new palette
 			m.blogReady = false
@@ -275,7 +284,7 @@ func (m model) updateModal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *model) previewTheme() {
 	items := m.filteredThemes()
 	if len(items) > 0 {
-		applyTheme(items[clamp(m.mSel, 0, len(items)-1)])
+		m.theme = items[clamp(m.mSel, 0, len(items)-1)]
 	}
 }
 
@@ -292,7 +301,20 @@ func (m model) filteredThemes() []string {
 	return out
 }
 
+// renderMu guards the package-level palette and styles, which every session
+// shares: a session holds it while its own theme and colour profile are
+// applied and its frame is rendered.
+var renderMu sync.Mutex
+
 func (m model) View() string {
+	renderMu.Lock()
+	defer renderMu.Unlock()
+	lipgloss.SetColorProfile(m.profile)
+	applyTheme(m.theme)
+	return m.view()
+}
+
+func (m model) view() string {
 	frame := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		BorderForeground(cFaint)
@@ -359,7 +381,7 @@ func (m model) viewApp(frame lipgloss.Style) string {
 		"",
 		stFaint.Render("mumbai, india"),
 	)
-	side = lipgloss.NewStyle().Width(sidebarW).PaddingLeft(1).Render(side)
+	side = lipgloss.NewStyle().Width(sidebarW).MaxHeight(innerH - 2).PaddingLeft(1).Render(side)
 
 	// --- content pane ---
 	var content string
@@ -378,13 +400,13 @@ func (m model) viewApp(frame lipgloss.Style) string {
 		content = m.viewContact(contentW)
 	}
 	content = lipgloss.NewStyle().
-		Width(contentW).Height(innerH - 2).
+		Width(contentW).Height(innerH - 2).MaxHeight(innerH - 2).
 		Padding(0, 2).
 		Render(content)
 
 	body := lipgloss.JoinHorizontal(lipgloss.Top,
 		side,
-		stFaint.Render(vline(innerH-1)),
+		stFaint.Render(vline(innerH-2)), // match content height, or the frame overflows by a row
 		content,
 	)
 
@@ -395,8 +417,16 @@ func (m model) viewApp(frame lipgloss.Style) string {
 		"  " + stDim.Render(fmt.Sprintf("session #%d", m.session)) +
 		"  " + stDim.Render(uptime()) +
 		"  " + stClock.Render(clockNow()) + " "
+	// narrow terminals (80 cols): shed the right-hand extras before the
+	// key hints, so the bar never wraps and pushes the frame off-screen
+	if stripWidth(left)+stripWidth(right) > innerW {
+		right = stOnline.Render(spinner) + " " + stClock.Render(clockNow()) + " "
+	}
+	if stripWidth(left)+stripWidth(right) > innerW {
+		right = ""
+	}
 	bar := lipgloss.JoinHorizontal(lipgloss.Bottom,
-		lipgloss.NewStyle().Width(innerW-stripWidth(right)).MaxWidth(innerW).Render(left),
+		lipgloss.NewStyle().Width(innerW-stripWidth(right)).MaxWidth(innerW).MaxHeight(1).Render(left),
 		right,
 	)
 
@@ -815,11 +845,13 @@ func (m *model) maybeRequestBlog() tea.Cmd {
 	m.blogRequestedW = w
 	m.blogRendering = true
 	md := m.blogMD
+	style, profile := blogStyle(themeByName(m.theme)), m.profile
 	return func() tea.Msg {
 		// styled from the active palette — the blog follows the theme
 		if r, err := glamour.NewTermRenderer(
 			glamour.WithWordWrap(w),
-			glamour.WithStyles(blogStyle()),
+			glamour.WithStyles(style),
+			glamour.WithColorProfile(profile),
 		); err == nil {
 			if out, err := r.Render(md); err == nil {
 				return blogRenderedMsg{content: out, width: w}

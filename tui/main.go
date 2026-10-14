@@ -12,12 +12,14 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 	"github.com/charmbracelet/ssh"
 	"github.com/charmbracelet/wish"
 	"github.com/charmbracelet/wish/activeterm"
 	bm "github.com/charmbracelet/wish/bubbletea"
 	"github.com/charmbracelet/wish/logging"
+	"github.com/muesli/termenv"
 )
 
 const defaultPort = "23234"
@@ -45,7 +47,7 @@ func main() {
 			fmt.Sscan(os.Args[2], &w)
 			fmt.Sscan(os.Args[3], &h)
 		}
-		mdl := newModel(mustLoadBlog(), 1)
+		mdl := newModel(mustLoadBlog(), 1, lipgloss.ColorProfile())
 		mdl.typed = len([]rune(bio)) // skip the typewriter for static renders
 		mdl.typing = false
 		if len(os.Args) > 4 {
@@ -86,8 +88,9 @@ func main() {
 		// Public on :22, so drop abandoned sessions instead of holding them forever.
 		wish.WithIdleTimeout(15*time.Minute),
 		wish.WithMiddleware(
-			bm.Middleware(func(ssh.Session) (tea.Model, []tea.ProgramOption) {
-				return newModel(mustLoadBlog(), int(sessionsServed.Add(1))), nil
+			bm.Middleware(func(s ssh.Session) (tea.Model, []tea.ProgramOption) {
+				m := newModel(mustLoadBlog(), int(sessionsServed.Add(1)), sessionProfile(s))
+				return m, []tea.ProgramOption{tea.WithAltScreen()}
 			}),
 			activeterm.Middleware(),
 			logging.Middleware(),
@@ -112,4 +115,33 @@ func main() {
 		log.Error("could not serve", "error", err)
 		os.Exit(1)
 	}
+}
+
+// sessionProfile works out what colours the visitor's terminal supports from
+// the TERM and env their ssh client sent. The server process itself has no
+// terminal, so lipgloss's own detection would always answer "no colour".
+// Anything that asks for a terminal today handles 256 colours, so that's the
+// floor (plain TERM=xterm would otherwise drop to 16).
+func sessionProfile(s ssh.Session) termenv.Profile {
+	pty, _, _ := s.Pty()
+	env := sshEnv(append(s.Environ(), "TERM="+pty.Term))
+	p := termenv.NewOutput(s, termenv.WithEnvironment(env), termenv.WithUnsafe()).EnvColorProfile()
+	if p > termenv.ANSI256 { // higher profile = fewer colours
+		p = termenv.ANSI256
+	}
+	return p
+}
+
+// sshEnv adapts an ssh session's environment for termenv.
+type sshEnv []string
+
+func (e sshEnv) Environ() []string { return e }
+
+func (e sshEnv) Getenv(key string) string {
+	for _, kv := range e {
+		if k, v, ok := strings.Cut(kv, "="); ok && k == key {
+			return v
+		}
+	}
+	return ""
 }
