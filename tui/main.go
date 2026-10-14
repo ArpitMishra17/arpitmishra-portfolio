@@ -83,6 +83,8 @@ func main() {
 	s, err := wish.NewServer(
 		wish.WithAddress("0.0.0.0:"+port),
 		wish.WithHostKeyPath(".ssh/host_ed25519"),
+		// Public on :22, so drop abandoned sessions instead of holding them forever.
+		wish.WithIdleTimeout(15*time.Minute),
 		wish.WithMiddleware(
 			bm.Middleware(func(ssh.Session) (tea.Model, []tea.ProgramOption) {
 				return newModel(mustLoadBlog(), int(sessionsServed.Add(1))), nil

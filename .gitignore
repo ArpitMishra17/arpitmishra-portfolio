@@ -46,3 +46,4 @@ coverage
 *.sw?
 tui/.ssh/
 tui/tui
+tui/deploy/tui-linux

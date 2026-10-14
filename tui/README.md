@@ -30,7 +30,25 @@ monochrome with one soft accent. Content mirrors the website (see `data.go`);
 blog posts live in `content/blog/` and are embedded into the binary — keep them
 in sync with `../content/blog/`.
 
-## Hosting (later)
+## Hosting
 
-Single static binary — deploy to Fly.io / a small VPS exposing TCP 22 (or any
-port) and point `tui.arpitmishra.dev` at it. Vercel can't do raw TCP.
+Runs on an Oracle Cloud Always Free VM (Ubuntu 24.04). The TUI owns port 22;
+admin sshd lives on 2222. Vercel/most PaaS free tiers can't do raw TCP.
+
+One-time server setup (after opening TCP 22 + 2222 in the VCN security list):
+
+```sh
+scp deploy/setup-server.sh deploy/tui.service ubuntu@<ip>:
+ssh ubuntu@<ip> sudo bash setup-server.sh stage1
+ssh -p 2222 ubuntu@<ip> true          # must succeed before stage2
+ssh -p 2222 ubuntu@<ip> sudo bash setup-server.sh stage2
+```
+
+Every deploy after that:
+
+```sh
+TUI_HOST=ubuntu@<ip> ./deploy/deploy.sh   # GOARCH=amd64 for the E2.1.Micro shape
+```
+
+Logs: `ssh -p 2222 ubuntu@<ip> journalctl -u tui -f`. DNS: A record
+`tui.arpitmishra.dev → <ip>`, DNS-only (no proxy).
