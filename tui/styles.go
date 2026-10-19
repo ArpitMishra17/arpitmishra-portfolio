@@ -1,18 +1,12 @@
 package main
 
 import (
-	_ "embed"
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
 
-	"github.com/charmbracelet/glamour/ansi"
 	"github.com/charmbracelet/lipgloss"
 )
-
-//go:embed content/styles/dark.json
-var darkStyleJSON []byte
 
 // theme is a named palette; the active one is applied to the cXxx/stXxx vars.
 type theme struct {
@@ -46,8 +40,8 @@ var themes = []theme{
 // active theme name, applied at startup and when the picker changes it.
 var activeTheme = themes[0].name
 
-// activeColors mirrors the applied theme as raw hex strings so the glamour
-// markdown style can be derived from it.
+// activeColors mirrors the applied theme as raw hex strings, for hexLerp and
+// friends that blend colours.
 var activeColors = themes[0]
 
 // Palette vars — everything reads these at render time, so applyTheme()
@@ -158,47 +152,7 @@ func link(url, text string) string {
 
 var spinnerFrames = []string{"◉", "◎", "○", "◎"}
 
-// eqBars renders a tiny animated equalizer, phase driven by the app ticker.
-func eqBars(tick, width int) string {
-	levels := []int{3, 6, 2, 5, 1, 4}
-	blocks := []string{"▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"}
-	var b string
-	for i := 0; i < width; i++ {
-		h := levels[(i+tick/2)%len(levels)]
-		b += lipgloss.NewStyle().Foreground(cAccent).Render(blocks[clamp(h, 0, len(blocks)-1)])
-	}
-	return b
-}
-
 var ansiRe = regexp.MustCompile("\x1b\\[[0-9;?]*[a-zA-Z]|\x1b\\][^\x07\x1b]*(\x07|\x1b\\\\)")
-
-// blogStyle derives a glamour markdown style from a palette so the blog post
-// follows the theme like every other surface. It starts from the stock
-// dark.json (for margins/formatting) and recolors the key elements.
-func blogStyle(c theme) ansi.StyleConfig {
-	sp := func(s string) *string { return &s }
-
-	var cfg ansi.StyleConfig
-	if err := json.Unmarshal(darkStyleJSON, &cfg); err != nil {
-		cfg = ansi.StyleConfig{}
-	}
-	cfg.Document.Color = sp(c.text)
-	cfg.Text.Color = sp(c.text)
-	cfg.H1.Color = sp(c.accent)
-	cfg.H2.Color = sp(c.accent)
-	cfg.H3.Color = sp(c.accent)
-	cfg.H4.Color = sp(c.accent)
-	cfg.Link.Color = sp(c.accent2)
-	cfg.LinkText.Color = sp(c.accent2)
-	cfg.Code.Color = sp(c.accent)
-	cfg.CodeBlock.Color = sp(c.text)
-	cfg.BlockQuote.Color = sp(c.dim)
-	cfg.Emph.Color = sp(c.dim)
-	cfg.Table.Color = sp(c.text)
-	cfg.Item.Color = sp(c.text)
-	cfg.HorizontalRule.Color = sp(c.faint)
-	return cfg
-}
 
 // stripANSI removes color/hyperlink escapes, leaving plain text — used to
 // dim the app behind an open dialog.

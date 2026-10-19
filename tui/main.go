@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"syscall"
@@ -47,9 +48,36 @@ func main() {
 			fmt.Sscan(os.Args[2], &w)
 			fmt.Sscan(os.Args[3], &h)
 		}
-		mdl := newModel(mustLoadBlog(), 1, lipgloss.ColorProfile())
-		mdl.typed = len([]rune(bio)) // skip the typewriter for static renders
-		mdl.typing = false
+		profile := lipgloss.ColorProfile()
+		if os.Getenv("TUI_COLOR") == "1" { // keep colour when piping to a file
+			profile = termenv.TrueColor
+		}
+		mdl := newModel(1, profile)
+		// stills show everything settled: intro over, titles decoded, bio typed.
+		// TUI_SINCE=0.2 instead freezes transitions 0.2s in, to inspect them.
+		long := 100 * time.Second
+		if v, err := strconv.ParseFloat(os.Getenv("TUI_SINCE"), 64); err == nil {
+			long = time.Duration(v * float64(time.Second))
+			mdl.prevExp, mdl.prevProj = 0, 0
+			mdl.expSel, mdl.projSel = 1, 1
+			mdl.noteSent, mdl.noteAt = true, mdl.at.Add(-long)
+		}
+		mdl.booting = false
+		mdl.startAt, mdl.bootEndAt = mdl.at.Add(-long), mdl.at.Add(-100*time.Second)
+		mdl.secAt, mdl.selAt = mdl.at.Add(-long), mdl.at.Add(-long)
+		hub.join(1, "arpit")
+		// TUI_VISITORS=3 adds fake visitors; TUI_T=12.5 renders scene time 12.5s
+		if n, err := strconv.Atoi(os.Getenv("TUI_VISITORS")); err == nil {
+			for i := 0; i < n; i++ {
+				hub.join(100+i, []string{"senje", "guest", "neo", "ada", "linus"}[i%5])
+			}
+		}
+		if v, err := strconv.ParseFloat(os.Getenv("TUI_T"), 64); err == nil {
+			mdl.st = v
+		}
+		if v, err := strconv.Atoi(os.Getenv("TUI_LOGO")); err == nil { // which Stack logo shows
+			mdl.logoSel = v % len(logoArt)
+		}
 		if len(os.Args) > 4 {
 			for i, n := range sectionNames {
 				if strings.EqualFold(n, os.Args[4]) {
@@ -62,6 +90,18 @@ func main() {
 			if strings.EqualFold(os.Args[4], "theme") {
 				mdl.modal = modalTheme
 			}
+			if strings.EqualFold(os.Args[4], "boot") {
+				mdl.booting = true
+			}
+			if strings.EqualFold(os.Args[4], "note") {
+				mdl.sec, mdl.modal, mdl.note = secContact, modalNote, "hello from the render path"
+			}
+			// ss0 … ss4: a screensaver effect
+			if n, ok := strings.CutPrefix(strings.ToLower(os.Args[4]), "ss"); ok {
+				mdl.ssOn = true
+				fmt.Sscan(n, &mdl.ssMode)
+				mdl.ssMode = clamp(mdl.ssMode, 0, len(ssModes)-1)
+			}
 		}
 		mdl2, _ := mdl.Update(tea.WindowSizeMsg{Width: w, Height: h})
 		fmt.Println(mdl2.View())
@@ -70,13 +110,16 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "-local" {
 		// Renders the TUI straight in the current terminal, no SSH involved.
 		// Useful for fast iteration: go run . -local
-		if _, err := newProgram(mustLoadBlog(), 1).Run(); err != nil {
+		loadGuestbookCount()
+		hub.join(1, visitorName(os.Getenv("USER")))
+		if _, err := newProgram(1).Run(); err != nil {
 			log.Error("local run failed", "error", err)
 			os.Exit(1)
 		}
 		return
 	}
 
+	loadGuestbookCount()
 	port := defaultPort
 	if p := os.Getenv("PORT"); p != "" {
 		port = p
@@ -89,7 +132,14 @@ func main() {
 		wish.WithIdleTimeout(15*time.Minute),
 		wish.WithMiddleware(
 			bm.Middleware(func(s ssh.Session) (tea.Model, []tea.ProgramOption) {
-				m := newModel(mustLoadBlog(), int(sessionsServed.Add(1)), sessionProfile(s))
+				id := int(sessionsServed.Add(1))
+				// stand on the promenade until the connection closes
+				hub.join(id, visitorName(s.User()))
+				go func() {
+					<-s.Context().Done()
+					hub.leave(id)
+				}()
+				m := newModel(id, sessionProfile(s))
 				return m, []tea.ProgramOption{tea.WithAltScreen()}
 			}),
 			activeterm.Middleware(),
