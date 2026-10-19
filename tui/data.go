@@ -1,45 +1,5 @@
 package main
 
-import (
-	"embed"
-	"fmt"
-	"strings"
-)
-
-//go:embed content/blog
-var blogFS embed.FS
-
-type post struct {
-	title string
-	date  string
-	slug  string
-}
-
-var posts = []post{
-	{title: "I built a benchmark to find out which code graph actually understands your codebase", date: "2026-08-21", slug: "codegraph-bench"},
-}
-
-func loadPost(p post) string {
-	b, err := blogFS.ReadFile("content/blog/" + p.slug + ".md")
-	if err != nil {
-		return fmt.Sprintf("# %s\n\n(post body unavailable)", p.title)
-	}
-	return stripFrontmatter(string(b))
-}
-
-// stripFrontmatter removes a leading YAML frontmatter block (--- ... ---),
-// mirroring what src/lib/blog.ts does for the website.
-func stripFrontmatter(s string) string {
-	if !strings.HasPrefix(s, "---") {
-		return s
-	}
-	if i := strings.Index(s[3:], "\n---"); i >= 0 {
-		rest := s[3+i+4:]
-		return strings.TrimPrefix(rest, "\n")
-	}
-	return s
-}
-
 type experience struct {
 	role, company, period string
 	points                []string
@@ -112,8 +72,8 @@ var experiences = []experience{
 }
 
 type project struct {
-	name  string
-	stack string
+	name   string
+	stack  string
 	points []string
 }
 
