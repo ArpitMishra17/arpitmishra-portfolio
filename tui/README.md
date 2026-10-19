@@ -1,34 +1,59 @@
 # tui — terminal portfolio
 
 SSH-served terminal portfolio, in the style of `ssh superlogical.jobs`.
-Go + [Wish](https://github.com/charmbracelet/wish) (SSH server) + [Bubble Tea](https://github.com/charmbracelet/bubbletea) + [Glamour](https://github.com/charmbracelet/glamour) (markdown).
+Go + [Wish](https://github.com/charmbracelet/wish) (SSH server) + [Bubble Tea](https://github.com/charmbracelet/bubbletea).
 
 ## Run
 
 ```sh
 go run .            # SSH server on :23234  →  ssh -p 23234 localhost
 go run . -local     # render directly in your terminal, no SSH
-go run . -render 120 40 Blog   # print one fixed-size frame (layout testing)
+go run . -render 120 40 Contact   # print one fixed-size frame (layout testing)
 ```
 
 `PORT=... go run .` changes the listen port. The host key is auto-generated at `tui/.ssh/host_ed25519` (gitignored).
 
 ## Keys
 
-- `←`/`→` or `tab`/`shift+tab` — switch section (also `1`–`6`)
-- `↑`/`↓` or `k`/`j` — select item / scroll
-- `g`/`G` — top/bottom (blog)
+- `←`/`→` or `tab`/`shift+tab` — switch section (also `1`–`5`)
+- `↑`/`↓` or `k`/`j` — select item
+- `a`/`d` — walk the promenade (Overview); everyone connected is on it
+- `n` — leave a note (Contact) — appended to `GUESTBOOK_PATH` (default `./guestbook.jsonl`), never shown to others
+- `r` — toggle rain · `m` — pause all motion
 - `t` — theme picker (opencode-style dialog, type to filter)
 - `?` — help dialog
-- `z` — 🤫
+- `z` — 🤫 (press again to cycle; also starts after ~90s idle)
 - `q` — quit
+
+## Scenes
+
+The animated bits are drawn into a small character framebuffer (`canvas.go`)
+and rendered once per frame. Scenes are pure functions of time and position
+(`scenes.go`, `fx.go`), coloured from the active theme, lit for the real hour
+in Mumbai with the real moon phase. Shared state is just the visitor list
+(`hub.go`). Preview knobs:
+
+```sh
+TUI_HOUR=18.5 go run . -local        # pin the time of day (dusk here)
+TUI_RAIN=1 go run . -local           # force the monsoon
+TUI_COLOR=1 TUI_VISITORS=3 TUI_T=7 go run . -render 120 36   # coloured still
+TUI_SINCE=0.2 go run . -render 120 36 Experience   # freeze transitions 0.2s in
+go run . -render 120 36 ss1          # a screensaver effect (ss0–ss4), or `boot`, `note`
+```
+
+Pieces of [ascii.rest](https://ascii.rest) by [@bas3line](https://github.com/bas3line)
+are adapted throughout, MIT licensed (see `LICENSE-ascii.rest`): the text effects
+in `typefx.go` (title decode, typewriter tagline, split-flap headers, ticker,
+wave), the Contact lighthouse in `scenes.go`, and the logos on Stack
+(`logos.go`; the library's own in `logos_data.go`, the rest in `logos_traced.go`,
+traced from devicon / Simple Icons artwork with ascii.rest's kit by
+`tools/logos/gen.sh <ascii.rest checkout>` — add a line there to add a logo).
+Logos are their owners' trademarks.
 
 ## Layout notes
 
 Omarchy-inspired: fixed left nav pane, hairline separator, generous padding,
-monochrome with one soft accent. Content mirrors the website (see `data.go`);
-blog posts live in `content/blog/` and are embedded into the binary — keep them
-in sync with `../content/blog/`.
+monochrome with one soft accent. Content mirrors the website (see `data.go`).
 
 ## Hosting
 
