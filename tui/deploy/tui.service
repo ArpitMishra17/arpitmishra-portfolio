@@ -9,6 +9,10 @@ Group=tui
 # Host key is read from .ssh/host_ed25519 relative to this dir.
 WorkingDirectory=/opt/tui
 Environment=PORT=22
+# Guestbook notes live in systemd's state dir, /var/lib/tui (owned by tui).
+Environment=GUESTBOOK_PATH=/var/lib/tui/guestbook.jsonl
+StateDirectory=tui
+StateDirectoryMode=0700
 ExecStart=/opt/tui/tui
 Restart=always
 RestartSec=2

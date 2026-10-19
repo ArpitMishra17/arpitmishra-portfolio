@@ -20,6 +20,7 @@ ssh_() { ssh -p "$SSH_PORT" "$TUI_HOST" "$@"; }
 
 echo "uploading..."
 scp -P "$SSH_PORT" -q deploy/tui-linux "$TUI_HOST":/tmp/tui.new
+scp -P "$SSH_PORT" -q deploy/tui.service "$TUI_HOST":/tmp/tui.service
 
 # Ship the local host key on first deploy so the fingerprint matches what
 # you've been testing with; never overwrite one already on the server.
@@ -33,7 +34,8 @@ fi
 
 echo "restarting service..."
 ssh_ 'sudo install -o root -g root -m 755 /tmp/tui.new /opt/tui/tui && rm /tmp/tui.new &&
-	sudo systemctl restart tui && sleep 1 && systemctl is-active tui'
+	sudo install -o root -g root -m 644 /tmp/tui.service /etc/systemd/system/tui.service && rm /tmp/tui.service &&
+	sudo systemctl daemon-reload && sudo systemctl restart tui && sleep 1 && systemctl is-active tui'
 
 rm deploy/tui-linux
 echo "done -> ssh ${TUI_HOST#*@}"
