@@ -35,6 +35,9 @@
 
   /* Hover tint shared by every grid cell */
   --cell-hover: color-mix(in srgb, var(--bg2) 92%, var(--accent) 8%);
+
+  /* Height of the ssh strip above the nav */
+  --strip-h: 32px;
 }
 
 [data-theme="light"] {
@@ -227,6 +230,168 @@
     min-height: 0;
   }
 
+  /* ─── ssh strip + nav shift ───
+     The strip is fixed above the nav; the nav steps down by its height while
+     it shows. transform, not top — no layout per transition. */
+  .nav-shift {
+    transition:
+      transform var(--dur-ui) var(--ease-out),
+      background-color var(--dur-ui) var(--ease-out),
+      border-color var(--dur-ui) var(--ease-out);
+  }
+
+  .nav-shift[data-shifted='true'] {
+    transform: translateY(var(--strip-h));
+  }
+
+  .ssh-strip {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1001;
+    height: var(--strip-h);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 12px;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--accent) 9%, var(--bg));
+    transition:
+      transform var(--dur-ui) var(--ease-out),
+      opacity var(--dur-ui) var(--ease-out);
+  }
+
+  .ssh-strip[data-visible='false'] {
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* ─── ssh hint (command + "?" tooltip) ─── */
+  .ssh-hint {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ssh-cmd {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font: inherit;
+    color: var(--fg);
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 3px 10px;
+    cursor: pointer;
+    transition:
+      color var(--dur-ui) var(--ease-out),
+      border-color var(--dur-ui) var(--ease-out);
+  }
+
+  .ssh-copy {
+    font-size: 11px;
+    color: var(--dim);
+  }
+
+  .ssh-copy[data-done='true'] {
+    color: var(--accent);
+  }
+
+  .ssh-q {
+    width: 18px;
+    height: 18px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border-radius: 9999px;
+    border: 1px solid var(--dim);
+    background: none;
+    color: var(--dim);
+    font: inherit;
+    font-size: 11px;
+    line-height: 1;
+    cursor: help;
+    transition:
+      color var(--dur-ui) var(--ease-out),
+      border-color var(--dur-ui) var(--ease-out);
+  }
+
+  .ssh-q[aria-expanded='true'] {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  /* Anchored to .ssh-hint (the help wrapper is unpositioned) and centred on it,
+     so it can't run off the edge on narrow screens. */
+  .ssh-tip {
+    position: absolute;
+    left: 50%;
+    width: 280px;
+    max-width: calc(100vw - 32px);
+    padding: 12px 14px;
+    font-size: 12px;
+    line-height: 1.65;
+    text-align: left;
+    color: var(--fg);
+    background: var(--bg2);
+    border: 1px solid var(--accent);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(4px);
+    transition:
+      opacity var(--dur-ui) var(--ease-out),
+      transform var(--dur-ui) var(--ease-out);
+  }
+
+  .ssh-tip[data-side='above'] {
+    bottom: calc(100% + 10px);
+  }
+
+  .ssh-tip[data-side='below'] {
+    top: calc(100% + 10px);
+    transform: translateX(-50%) translateY(-4px);
+  }
+
+  /* Covers the gap so the pointer can travel from "?" onto the tooltip. */
+  .ssh-tip::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 12px;
+  }
+
+  .ssh-tip[data-side='above']::before { top: 100%; }
+  .ssh-tip[data-side='below']::before { bottom: 100%; }
+
+  .ssh-tip b {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .ssh-tip ol {
+    margin: 6px 0 0;
+    padding-left: 18px;
+    list-style: decimal;
+  }
+
+  .ssh-tip kbd {
+    font: inherit;
+    color: var(--accent);
+  }
+
+  .ssh-help[data-open='true'] .ssh-tip,
+  .ssh-help:has(.ssh-q:focus-visible) .ssh-tip {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%);
+  }
+
   /* ─── Theme toggle knob ───
      transform, not left — this must not trigger layout. */
   .theme-knob {
@@ -303,6 +468,22 @@
   .sweep-hover:hover::after {
     transform: translateX(100%);
   }
+
+  .ssh-cmd:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .ssh-q:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
+  .ssh-help:hover .ssh-tip {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(-50%);
+  }
 }
 
 /* ─── Reduced motion ───
@@ -347,6 +528,22 @@
   .theme-knob,
   .metric-bar {
     transition: none;
+  }
+
+  /* Strip fades instead of sliding; nav steps without easing. */
+  .nav-shift {
+    transition: background-color var(--dur-ui) linear, border-color var(--dur-ui) linear;
+  }
+
+  .ssh-strip,
+  .ssh-strip[data-visible='false'] {
+    transform: none;
+    transition: opacity 150ms linear;
+  }
+
+  .ssh-tip,
+  .ssh-tip[data-side] {
+    transition: opacity 150ms linear;
   }
 
   /* Infinite decorative loops stop entirely. */

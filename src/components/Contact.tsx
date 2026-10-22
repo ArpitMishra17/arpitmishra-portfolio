@@ -1,3 +1,5 @@
+import SshHint from './SshHint'
+
 const links = [
   {
     label: 'email',
@@ -66,6 +68,14 @@ export default function Contact() {
             {link.text}
           </a>
         ))}
+      </div>
+
+      <div
+        className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 mt-4 pt-6 border-t text-[13px]"
+        style={{ borderColor: 'var(--border)' }}
+      >
+        <span style={{ color: 'var(--dim)' }}>prefer a terminal?</span>
+        <SshHint tipSide="above" />
       </div>
     </div>
   )

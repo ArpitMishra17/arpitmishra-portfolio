@@ -1,8 +1,10 @@
 import { Suspense, lazy } from 'react'
-import { Routes, Route, Link } from 'react-router-dom'
+import { Routes, Route, Link, useLocation } from 'react-router-dom'
 import { useTheme } from './hooks/useTheme'
 import { useHashScroll } from './hooks/useHashScroll'
+import { useScrolled } from './hooks/useScrolled'
 import Nav from './components/Nav'
+import SshStrip from './components/SshStrip'
 import Home from './pages/Home'
 
 // The blog route pulls in a 400-line markdown renderer; visitors who only ever
@@ -25,11 +27,15 @@ function NotFound() {
 export default function App() {
   const { theme, toggle } = useTheme()
   useHashScroll()
+  const isHome = useLocation().pathname === '/'
+  const scrolled = useScrolled()
+  const showStrip = isHome && !scrolled
 
   return (
     <>
       <div className="grid-bg" />
-      <Nav theme={theme} onToggleTheme={toggle} />
+      {isHome && <SshStrip visible={showStrip} />}
+      <Nav theme={theme} onToggleTheme={toggle} shifted={showStrip} />
       <Suspense fallback={<div className="min-h-[100svh]" />}>
         <Routes>
           <Route path="/" element={<Home />} />

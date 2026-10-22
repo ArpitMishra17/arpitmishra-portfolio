@@ -3,11 +3,13 @@ import { Link, useLocation } from 'react-router-dom'
 interface NavProps {
   theme: 'dark' | 'light'
   onToggleTheme: () => void
+  /** Drop below the ssh strip while it is showing. */
+  shifted?: boolean
 }
 
 const SECTIONS = ['experience', 'projects', 'tech', 'blog', 'contact']
 
-export default function Nav({ theme, onToggleTheme }: NavProps) {
+export default function Nav({ theme, onToggleTheme, shifted = false }: NavProps) {
   const location = useLocation()
   const isHome = location.pathname === '/'
 
@@ -17,7 +19,8 @@ export default function Nav({ theme, onToggleTheme }: NavProps) {
 
   return (
     <nav
-      className="fixed top-0 left-0 right-0 z-[1000] flex justify-between items-center backdrop-blur-[12px] border-b transition-colors select-none"
+      className="nav-shift fixed top-0 left-0 right-0 z-[1000] flex justify-between items-center backdrop-blur-[12px] border-b select-none"
+      data-shifted={shifted}
       style={{
         background: 'color-mix(in srgb, var(--bg) 85%, transparent)',
         borderColor: 'var(--border)',
