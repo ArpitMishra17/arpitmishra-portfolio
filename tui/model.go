@@ -47,6 +47,7 @@ const (
 	bioCPS     = 32                     // bio typewriter, characters a second
 	idleSaver  = 90 * time.Second       // screensaver after this long without input
 	idleFreeze = 6 * time.Minute        // and everything stops after this
+	idleQuit   = 20 * time.Minute       // and the session ends; ssh's own idle timeout never fires
 )
 
 // Terminal sizes are clamped to these. Every frame is drawn at the full size,
@@ -173,6 +174,10 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width, m.height = clamp(msg.Width, 0, maxCols), clamp(msg.Height, 0, maxRows)
 	case animMsg:
 		now := time.Time(msg)
+		// no key for this long: end the session so abandoned clients free their slot
+		if now.Sub(m.lastInputAt) > idleQuit {
+			return m, tea.Quit
+		}
 		dt := clampf(now.Sub(m.at).Seconds(), 0, 0.25)
 		m.at = now
 		m.tick++

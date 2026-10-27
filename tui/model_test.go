@@ -3,6 +3,7 @@ package main
 import (
 	"strings"
 	"testing"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/muesli/termenv"
@@ -40,5 +41,60 @@ func TestHugeWindowRendersAtClampedSize(t *testing.T) {
 	out := got.(model).View()
 	if lines := strings.Count(out, "\n") + 1; lines > maxRows {
 		t.Errorf("frame has %d lines at a huge size, want at most %d", lines, maxRows)
+	}
+}
+
+// quits runs cmd and reports whether it produced tea.Quit's message.
+func quits(cmd tea.Cmd) bool {
+	if cmd == nil {
+		return false
+	}
+	_, ok := cmd().(tea.QuitMsg)
+	return ok
+}
+
+func TestIdleQuit(t *testing.T) {
+	m := newModel(1, termenv.Ascii)
+	m.booting = false
+	m.lastInputAt = time.Now().Add(-(idleQuit + time.Minute))
+	_, cmd := m.Update(animMsg(time.Now()))
+	if !quits(cmd) {
+		t.Error("model idle past idleQuit did not quit")
+	}
+}
+
+func TestFreshModelDoesNotQuit(t *testing.T) {
+	m := newModel(1, termenv.Ascii)
+	m.booting = false
+	_, cmd := m.Update(animMsg(time.Now()))
+	if quits(cmd) {
+		t.Error("fresh model quit on its first frame")
+	}
+}
+
+func TestKeyResetsIdleQuit(t *testing.T) {
+	m := newModel(1, termenv.Ascii)
+	m.booting = false
+	m.lastInputAt = time.Now().Add(-(idleQuit + time.Minute))
+	got, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("x")})
+	_, cmd := got.(model).Update(animMsg(time.Now()))
+	if quits(cmd) {
+		t.Error("model quit right after a key press")
+	}
+}
+
+func TestScreensaverStillStartsBeforeIdleQuit(t *testing.T) {
+	m := newModel(1, termenv.Ascii)
+	m.booting = false
+	m.lastInputAt = time.Now().Add(-(idleSaver + time.Minute))
+	got, cmd := m.Update(animMsg(time.Now()))
+	if quits(cmd) {
+		t.Fatal("quit before idleQuit")
+	}
+	if !got.(model).ssOn {
+		t.Error("screensaver did not start after idleSaver")
+	}
+	if idleQuit <= idleSaver || idleQuit <= idleFreeze {
+		t.Error("idleQuit must be longer than idleSaver and idleFreeze")
 	}
 }

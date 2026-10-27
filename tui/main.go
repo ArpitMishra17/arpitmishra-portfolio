@@ -129,20 +129,25 @@ func main() {
 		wish.WithAddress("0.0.0.0:"+port),
 		wish.WithHostKeyPath(".ssh/host_ed25519"),
 		// Public on :22, so drop abandoned sessions instead of holding them forever.
+		// ssh resets the idle deadline on every write, and the TUI keeps writing
+		// frames, so it never fires; the model quits after idleQuit with no key,
+		// and the watchdog in session.go drops clients that stop reading or typing.
+		// The max timeout is an absolute cap on any one session.
 		wish.WithIdleTimeout(15*time.Minute),
+		wish.WithMaxTimeout(2*time.Hour),
+		// wish runs the last middleware first, so the order below runs as:
+		// logging (logs refused attempts too), sessionLimiter (refuses before
+		// anything is allocated), activeterm, sessionScope (id, watchdog, hub
+		// membership of pty sessions), then the bubbletea app on the scoped session.
 		wish.WithMiddleware(
 			bm.Middleware(func(s ssh.Session) (tea.Model, []tea.ProgramOption) {
-				id := int(sessionsServed.Add(1))
-				// stand on the promenade until the connection closes
-				hub.join(id, visitorName(s.User()))
-				go func() {
-					<-s.Context().Done()
-					hub.leave(id)
-				}()
-				m := newModel(id, sessionProfile(s))
+				// sessionScope has already put the session on the hub
+				m := newModel(sessionID(s), sessionProfile(s))
 				return m, []tea.ProgramOption{tea.WithAltScreen()}
 			}),
+			sessionScope(),
 			activeterm.Middleware(),
+			sessionLimiter(gate),
 			logging.Middleware(),
 		),
 	)

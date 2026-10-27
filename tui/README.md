@@ -57,9 +57,12 @@ monochrome with one soft accent. Content mirrors the website (see `data.go`).
 
 ## Limits
 
-The server is public, so `model.go` caps what one visitor can use:
+The server is public, so `limits.go` and `model.go` cap what one visitor can use:
 
 - terminal size is clamped to 600x200, well above a full-screen 4K terminal (bigger sizes cost memory on every frame)
+- a session ends after 20 minutes with no key, and after 2 hours in total
+- a connection is dropped if its client stops reading for a minute, or sends no input for 21 minutes
+- 40 sessions at once, 4 per IP, and 10 new sessions a minute per IP
 
 ## Hosting
 
