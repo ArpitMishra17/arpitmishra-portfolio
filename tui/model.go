@@ -49,6 +49,13 @@ const (
 	idleFreeze = 6 * time.Minute        // and everything stops after this
 )
 
+// Terminal sizes are clamped to these. Every frame is drawn at the full size,
+// so an absurd size costs memory and CPU on every tick, and View holds renderMu.
+const (
+	maxCols = 600
+	maxRows = 200
+)
+
 // screensaver effects, cycled with z
 var ssModes = []string{"doom fire", "marine drive", "matrix", "starfield", "dvd"}
 
@@ -163,7 +170,7 @@ func (m model) frameDur() time.Duration {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.width, m.height = msg.Width, msg.Height
+		m.width, m.height = clamp(msg.Width, 0, maxCols), clamp(msg.Height, 0, maxRows)
 	case animMsg:
 		now := time.Time(msg)
 		dt := clampf(now.Sub(m.at).Seconds(), 0, 0.25)

@@ -55,6 +55,12 @@ Logos are their owners' trademarks.
 Omarchy-inspired: fixed left nav pane, hairline separator, generous padding,
 monochrome with one soft accent. Content mirrors the website (see `data.go`).
 
+## Limits
+
+The server is public, so `model.go` caps what one visitor can use:
+
+- terminal size is clamped to 600x200, well above a full-screen 4K terminal (bigger sizes cost memory on every frame)
+
 ## Hosting
 
 Runs on an Oracle Cloud Always Free VM (Ubuntu 24.04). The TUI owns port 22;
