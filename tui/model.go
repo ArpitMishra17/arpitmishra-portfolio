@@ -70,6 +70,7 @@ type model struct {
 	sec           section
 	width, height int
 	session       int
+	ip            string // visitor's host address, for guestbook rate limits; empty locally
 
 	// Per-session look: each visitor gets their own theme and the colour
 	// profile their terminal supports. View applies both to the shared
@@ -375,7 +376,7 @@ func (m model) updateNote(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.modal = modalNone
 	case tea.KeyEnter:
 		if note := strings.TrimSpace(m.note); note != "" {
-			err := saveNote(hub.name(m.session), m.session, note)
+			err := saveNote(hub.name(m.session), m.session, m.ip, note)
 			m.noteSent, m.noteErr, m.noteAt = err == nil, err != nil, m.at
 		}
 		m.modal = modalNone

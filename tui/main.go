@@ -143,6 +143,7 @@ func main() {
 			bm.Middleware(func(s ssh.Session) (tea.Model, []tea.ProgramOption) {
 				// sessionScope has already put the session on the hub
 				m := newModel(sessionID(s), sessionProfile(s))
+				m.ip = remoteHost(s.RemoteAddr())
 				return m, []tea.ProgramOption{tea.WithAltScreen()}
 			}),
 			sessionScope(),

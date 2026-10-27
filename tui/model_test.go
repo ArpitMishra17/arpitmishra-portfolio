@@ -98,3 +98,20 @@ func TestScreensaverStillStartsBeforeIdleQuit(t *testing.T) {
 		t.Error("idleQuit must be longer than idleSaver and idleFreeze")
 	}
 }
+
+func TestNoteUsesVisitorIP(t *testing.T) {
+	newGuestbookTest(t)
+	m := newModel(1, termenv.Ascii)
+	m.booting = false
+	m.ip = "10.9.9.9"
+	m.modal, m.note = modalNote, "hi"
+	// use up this address's notes, so the send must be refused for its IP
+	for i := 0; i < noteIPHourMax; i++ {
+		noteIPLimit.allow("10.9.9.9", now())
+	}
+	got, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	mm := got.(model)
+	if mm.noteSent || !mm.noteErr {
+		t.Errorf("noteSent=%v noteErr=%v, want refused by the IP limit", mm.noteSent, mm.noteErr)
+	}
+}

@@ -63,6 +63,7 @@ The server is public, so `limits.go` and `model.go` cap what one visitor can use
 - a session ends after 20 minutes with no key, and after 2 hours in total
 - a connection is dropped if its client stops reading for a minute, or sends no input for 21 minutes
 - 40 sessions at once, 4 per IP, and 10 new sessions a minute per IP
+- guestbook file stops at 2 MB, 100 notes an hour overall, 3 per IP an hour
 
 ## Hosting
 

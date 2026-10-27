@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"os"
 	"sort"
 	"strings"
@@ -101,9 +102,24 @@ func visitorName(s string) string {
 var (
 	guestbookMu    sync.Mutex
 	guestbookCount atomic.Int64
+
+	// notes are capped overall and per visitor, so the file can't be flooded
+	noteAllLimit = newHitLimiter(noteHourMax, time.Hour)
+	noteIPLimit  = newHitLimiter(noteIPHourMax, time.Hour)
+	noteRateMu   sync.Mutex // makes the two caps one check, see allowNote
 )
 
-const noteMax = 200
+const (
+	noteMax           = 200
+	guestbookMaxBytes = 2 << 20 // the file stops growing at about this size
+	noteHourMax       = 100     // notes an hour from everyone together
+	noteIPHourMax     = 3       // notes an hour from one address
+)
+
+var (
+	errGuestbookFull = errors.New("guestbook is full")
+	errNoteLimited   = errors.New("too many notes right now")
+)
 
 func guestbookPath() string {
 	if p := os.Getenv("GUESTBOOK_PATH"); p != "" {
@@ -127,7 +143,24 @@ func loadGuestbookCount() {
 	guestbookCount.Store(n)
 }
 
-func saveNote(name string, session int, note string) error {
+// allowNote charges a note from ip to both caps, or to neither if either is full.
+func allowNote(ip string, t time.Time) bool {
+	noteRateMu.Lock()
+	defer noteRateMu.Unlock()
+	if !noteIPLimit.peek(ip, t) || !noteAllLimit.peek("", t) {
+		return false
+	}
+	noteIPLimit.allow(ip, t)
+	noteAllLimit.allow("", t)
+	return true
+}
+
+// saveNote appends a note to the guestbook file, subject to the rate caps.
+func saveNote(name string, session int, ip, note string) error {
+	t := now()
+	if !allowNote(ip, t) {
+		return errNoteLimited
+	}
 	guestbookMu.Lock()
 	defer guestbookMu.Unlock()
 	f, err := os.OpenFile(guestbookPath(), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
@@ -135,8 +168,15 @@ func saveNote(name string, session int, note string) error {
 		return err
 	}
 	defer f.Close()
+	fi, err := f.Stat()
+	if err != nil {
+		return err
+	}
+	if fi.Size() >= guestbookMaxBytes {
+		return errGuestbookFull
+	}
 	b, _ := json.Marshal(map[string]any{
-		"time": time.Now().UTC().Format(time.RFC3339), "name": name, "session": session, "note": note,
+		"time": t.UTC().Format(time.RFC3339), "name": name, "session": session, "note": note,
 	})
 	if _, err := f.Write(append(b, '\n')); err != nil {
 		return err
