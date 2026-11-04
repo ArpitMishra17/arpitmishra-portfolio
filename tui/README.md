@@ -38,7 +38,7 @@ TUI_HOUR=18.5 go run . -local        # pin the time of day (dusk here)
 TUI_RAIN=1 go run . -local           # force the monsoon
 TUI_COLOR=1 TUI_VISITORS=3 TUI_T=7 go run . -render 120 36   # coloured still
 TUI_SINCE=0.2 go run . -render 120 36 Experience   # freeze transitions 0.2s in
-go run . -render 120 36 ss1          # a screensaver effect (ss0–ss4), or `boot`, `note`
+go run . -render 120 36 ss1          # a screensaver effect (ss0 is pipes, ss0–ss5), or `boot`, `note`
 ```
 
 Pieces of [ascii.rest](https://ascii.rest) by [@bas3line](https://github.com/bas3line)

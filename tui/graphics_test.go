@@ -67,12 +67,17 @@ func TestImageIDs(t *testing.T) {
 	for i, e := range experiences {
 		add(expImageID(i), "experience "+e.company)
 	}
+	for c := range pipeColors {
+		for p := pipePiece(0); p < pipePieces; p++ {
+			add(pipeSpriteID(c, p), fmt.Sprintf("pipe colour %d piece %d", c, p))
+		}
+	}
 }
 
 // every image is uploaded once, under its own id.
 func TestImageUploads(t *testing.T) {
 	up := imageUploads()
-	images := len(experiences)
+	images := len(experiences) + len(pipeColors)*int(pipePieces)
 	t.Logf("kitty uploads: %d images, %d bytes", images, len(up))
 	if !bytes.HasPrefix(up, []byte("\x1b_G")) {
 		t.Fatal("uploads do not start with a graphics escape")
@@ -83,6 +88,13 @@ func TestImageUploads(t *testing.T) {
 	for i := range experiences {
 		if !hasID(up, expImageID(i)) {
 			t.Fatalf("experience %d (id %d) is not uploaded", i, expImageID(i))
+		}
+	}
+	for c := range pipeColors {
+		for p := pipePiece(0); p < pipePieces; p++ {
+			if !hasID(up, pipeSpriteID(c, p)) {
+				t.Fatalf("pipe colour %d piece %d (id %d) is not uploaded", c, p, pipeSpriteID(c, p))
+			}
 		}
 	}
 }
@@ -232,6 +244,48 @@ func TestOverlayOverKittyExperience(t *testing.T) {
 	for i := range pl {
 		if a, b := lipgloss.Width(kl[i]), lipgloss.Width(pl[i]); a != b {
 			t.Fatalf("row %d: %d cells with kitty, %d without", i, a, b)
+		}
+	}
+}
+
+// the idle screensaver opens on pipes.
+func TestIdleSaverOpensOnPipes(t *testing.T) {
+	m := expModel(0)
+	m.lastInputAt = m.at.Add(-(idleSaver + time.Second))
+	got, _ := m.Update(animMsg(m.at))
+	mm := got.(model)
+	if !mm.ssOn || ssModes[mm.ssMode] != "pipes" {
+		t.Fatalf("idle saver on %v, mode %q", mm.ssOn, ssModes[mm.ssMode])
+	}
+}
+
+// the pipes screensaver has the frame's inner size in both forms, and the
+// label where the other modes put it.
+func TestScreensaverPipesWidths(t *testing.T) {
+	const label = " pipes · z next · any key exits "
+	for _, kitty := range []bool{false, true} {
+		for _, sz := range [][2]int{{80, 24}, {120, 40}, {3, 3}} {
+			m := expModel(0)
+			m.ssOn, m.ssMode, m.kitty = true, 0, kitty
+			m.width, m.height = sz[0], sz[1]
+			m.st = 60
+			out := m.viewScreensaver()
+			w, h := sz[0]-2, sz[1]-2
+			lines := strings.Split(out, "\n")
+			if len(lines) != h {
+				t.Fatalf("kitty %v %dx%d: %d rows, want %d", kitty, sz[0], sz[1], len(lines), h)
+			}
+			for y, l := range lines {
+				if got := lipgloss.Width(l); got != w {
+					t.Fatalf("kitty %v %dx%d row %d: width %d, want %d", kitty, sz[0], sz[1], y, got, w)
+				}
+			}
+			if has := strings.ContainsRune(out, kittyPlaceholder); has != kitty {
+				t.Fatalf("kitty %v: placeholders present %v", kitty, has)
+			}
+			if w >= len(label)+1 && !strings.Contains(stripSGR(lines[h-1]), label) {
+				t.Fatalf("kitty %v: label missing from the last row", kitty)
+			}
 		}
 	}
 }

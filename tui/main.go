@@ -97,7 +97,7 @@ func main() {
 			if strings.EqualFold(os.Args[4], "note") {
 				mdl.sec, mdl.modal, mdl.note = secContact, modalNote, "hello from the render path"
 			}
-			// ss0 … ss4: a screensaver effect
+			// ss0 … ss5: a screensaver effect, in ssModes order; past the end is the last
 			if n, ok := strings.CutPrefix(strings.ToLower(os.Args[4]), "ss"); ok {
 				mdl.ssOn = true
 				fmt.Sscan(n, &mdl.ssMode)

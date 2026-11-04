@@ -22,6 +22,63 @@ func pixelAt(img image.Image, x, y int) color.NRGBA {
 	return color.NRGBAModel.Convert(img.At(x, y)).(color.NRGBA)
 }
 
+func TestPipeSpritesDecode(t *testing.T) {
+	for p := pipePiece(0); p < pipePieces; p++ {
+		for c := range pipeColors {
+			img := decodePNG(t, pipeSpritePNG(p, c))
+			if b := img.Bounds(); b.Dx() != spriteW || b.Dy() != spriteH {
+				t.Fatalf("piece %d colour %d: bounds %v", p, c, b)
+			}
+			for _, pt := range [][2]int{{0, 0}, {spriteW - 1, 0}, {0, spriteH - 1}, {spriteW - 1, spriteH - 1}} {
+				if p == pipeH && pixelAt(img, pt[0], pt[1]).A != 0 {
+					t.Fatalf("pipeH corner %v is not transparent", pt)
+				}
+			}
+			if p == pipeCap || p >= pipeEndN || (p >= pipeNE && p <= pipeSW) {
+				if pixelAt(img, spriteW/2, spriteH/2).A != 255 {
+					t.Fatalf("piece %d: joint at the centre is not opaque", p)
+				}
+			}
+		}
+	}
+	if pipeSpritePNG(pipePieces, 0) != nil {
+		t.Fatal("out-of-range piece should give nil")
+	}
+}
+
+func TestPipeSpriteBudget(t *testing.T) {
+	total := 0
+	for p := pipePiece(0); p < pipePieces; p++ {
+		for c := range pipeColors {
+			total += len(pipeSpritePNG(p, c))
+		}
+	}
+	if total > 55*1024 {
+		t.Fatalf("sprites total %d bytes, want under 55 KB", total)
+	}
+}
+
+// the joins: a horizontal tube's right edge matches a corner's right edge, and a
+// vertical tube's bottom edge matches a corner's bottom edge, pixel for pixel.
+func TestPipeSpriteJoints(t *testing.T) {
+	for c := range pipeColors {
+		h := decodePNG(t, pipeSpritePNG(pipeH, c))
+		v := decodePNG(t, pipeSpritePNG(pipeV, c))
+		se := decodePNG(t, pipeSpritePNG(pipeSE, c))
+		sw := decodePNG(t, pipeSpritePNG(pipeSW, c))
+		for y := 0; y < spriteH; y++ {
+			if a, b := pixelAt(h, spriteW-1, y), pixelAt(se, spriteW-1, y); a != b {
+				t.Fatalf("colour %d row %d: pipeH right edge %v, pipeSE %v", c, y, a, b)
+			}
+		}
+		for x := 0; x < spriteW; x++ {
+			if a, b := pixelAt(v, x, spriteH-1), pixelAt(sw, x, spriteH-1); a != b {
+				t.Fatalf("colour %d col %d: pipeV bottom edge %v, pipeSW %v", c, x, a, b)
+			}
+		}
+	}
+}
+
 func TestLogoSlug(t *testing.T) {
 	cases := map[string]string{
 		"Vyazen":                  "vyazen",

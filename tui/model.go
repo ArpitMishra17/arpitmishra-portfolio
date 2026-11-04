@@ -58,8 +58,8 @@ const (
 	maxRows = 200
 )
 
-// screensaver effects, cycled with z
-var ssModes = []string{"doom fire", "marine drive", "matrix", "starfield", "dvd"}
+// screensaver effects, cycled with z; the idle one opens on the first
+var ssModes = []string{"pipes", "doom fire", "marine drive", "matrix", "starfield", "dvd"}
 
 var taglineTW = newTypewriter([]string{
 	"software engineer", "building ai agents", "contributing to zed", "shipping from mumbai",
@@ -1295,8 +1295,14 @@ func (m model) viewScreensaver() string {
 		return m.viewBounce(w, h)
 	}
 	t, pal := m.st, paletteOf(activeColors)
+	label := fmt.Sprintf(" %s · z next · any key exits ", ssModes[m.ssMode])
+	if ssModes[m.ssMode] == "pipes" && m.kitty {
+		return pipesKitty(w, h, pipeSteps(t), uint32(m.session), label, fgSeq(m.profile, pal.dim))
+	}
 	var cv *canvas
 	switch ssModes[m.ssMode] {
+	case "pipes":
+		cv = pipesASCII(w, h, t, pal)
 	case "marine drive":
 		cv = marineDrive(w, h, m.sceneOpts(), pal)
 	case "doom fire":
@@ -1306,7 +1312,6 @@ func (m model) viewScreensaver() string {
 	case "starfield":
 		cv = starfield(w, h, t, pal)
 	}
-	label := fmt.Sprintf(" %s · z next · any key exits ", ssModes[m.ssMode])
 	cv.text(w-utf8.RuneCountInString(label)-1, h-1, label, pal.dim)
 	return cv.render(m.profile)
 }
