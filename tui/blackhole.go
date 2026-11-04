@@ -33,8 +33,9 @@ type blackHoleArt struct {
 	cols, rows int
 	cells      [][]bhCrossing
 	stars      []bool
-	tabs       [][]float64
-	turns      []int
+	hole       []float64   // share of each cell's rays that fall in
+	tabs       [][]float64 // each band's gas, a ring of samples
+	turns      []float64   // turns each band takes per spin unit (a whole loop, for the text version)
 }
 
 var (
@@ -79,47 +80,59 @@ var bhPaths = sync.OnceValue(func() [][]float64 {
 	return table
 })
 
-func traceBlackHole(cols, rows int) *blackHoleArt {
-	cw := 2 * bhSpan / float64(cols) // one cell's width as a tangent; it stands twice as tall
+// bhRaster says how the rays land on a grid of cells.
+type bhRaster struct {
+	w, h   int                       // cells across and down
+	sx, sy int                       // rays per cell across and down
+	aspect float64                   // a cell's height over its width, as tangents
+	dim    float64                   // light kept by each disk crossing after the first
+	ring   float64                   // gain on those later crossings, the lensed images
+	fade   float64                   // how far in from the disk's inner edge the light fades, in Schwarzschild radii
+	beam   func(phi float64) float64 // Doppler beaming of a crossing at angle phi
+}
+
+// bandGas is one band's gas: a ring of n samples of noise from the harmonics
+// ks, each with a random phase and amplitude, scaled to [0.45, 1].
+func bandGas(rnd *mulberry32, ks []float64, n int) []float64 {
+	type wave struct{ k, p, a float64 }
+	var waves []wave
+	for _, k := range ks {
+		waves = append(waves, wave{k, rnd.next() * 6.283, (0.5 + rnd.next()) / math.Sqrt(k)})
+	}
+	tab := make([]float64, n)
+	lo, hi := math.Inf(1), math.Inf(-1)
+	for i := range tab {
+		for _, wv := range waves {
+			tab[i] += wv.a * math.Sin(wv.k*2*math.Pi*float64(i)/float64(n)+wv.p)
+		}
+		lo, hi = math.Min(lo, tab[i]), math.Max(hi, tab[i])
+	}
+	for i := range tab {
+		tab[i] = 0.45 + 0.55*(tab[i]-lo)/(hi-lo)
+	}
+	return tab
+}
+
+// traceRays fires the rays of g. Each ray: its plane, then the angles where it
+// crosses the disk plane, a half turn apart. It returns each cell's crossings,
+// which cells no ray touches the disk or falls into the hole, and the share of
+// each cell's rays that fall in.
+func traceRays(g bhRaster) ([][]bhCrossing, []bool, []float64) {
+	cw := 2 * bhSpan / float64(g.w) // one cell's width as a tangent
 	s, c := math.Sin(bhTilt), math.Cos(bhTilt)
 	table := bhPaths()
 
-	// each band's gas is a ring of noise: a few whole harmonics, so it closes
-	rnd := mulberry32(17)
-	art := &blackHoleArt{cols: cols, rows: rows, cells: make([][]bhCrossing, cols*rows), stars: make([]bool, cols*rows)}
-	for b := 0; b < bhBands; b++ {
-		r := bhIn + float64(bhOut-bhIn)*float64(b)/(bhBands-1)
-		art.turns = append(art.turns, max(1, int(math.Round(bhSpin*math.Pow(bhIn/r, 1.5)))))
-		type wave struct{ k, p, a float64 }
-		var waves []wave
-		for _, k := range []float64{2, 3, 5, 8, 13} {
-			waves = append(waves, wave{k, rnd.next() * 6.283, (0.5 + rnd.next()) / math.Sqrt(k)})
-		}
-		tab := make([]float64, bhTab)
-		lo, hi := math.Inf(1), math.Inf(-1)
-		for i := range tab {
-			for _, wv := range waves {
-				tab[i] += wv.a * math.Sin(wv.k*2*math.Pi*float64(i)/bhTab+wv.p)
-			}
-			lo, hi = math.Min(lo, tab[i]), math.Max(hi, tab[i])
-		}
-		for i := range tab {
-			tab[i] = 0.45 + 0.55*(tab[i]-lo)/(hi-lo)
-		}
-		art.tabs = append(art.tabs, tab)
-	}
-
-	// Each ray: its plane, then the angles where it crosses the disk plane, a
-	// half turn apart. A crossing inside the disk keeps what never changes.
-	empty := make([]bool, cols*rows)
+	cells := make([][]bhCrossing, g.w*g.h)
+	empty := make([]bool, g.w*g.h)
+	hole := make([]float64, g.w*g.h)
 	for i := range empty {
 		empty[i] = true
 	}
-	for j := 0; j < rows*bhSY; j++ {
-		y := (float64(rows)/2 + 0.5 - (float64(j)+0.5)/bhSY) * 2 * cw
-		for i := 0; i < cols*bhSX; i++ {
-			x := ((float64(i)+0.5)/bhSX - float64(cols)/2) * cw
-			k := (j/bhSY)*cols + i/bhSX
+	for j := 0; j < g.h*g.sy; j++ {
+		y := (float64(g.h)/2 + 0.5 - (float64(j)+0.5)/float64(g.sy)) * g.aspect * cw
+		for i := 0; i < g.w*g.sx; i++ {
+			x := ((float64(i)+0.5)/float64(g.sx) - float64(g.w)/2) * cw
+			k := (j/g.sy)*g.w + i/g.sx
 			n := math.Sqrt(x*x + y*y + 1)
 			d := [3]float64{x / n, (y*c - s) / n, (y*s + c) / n}
 			out := d[1]*s - d[2]*c
@@ -128,6 +141,7 @@ func traceBlackHole(cols, rows int) *blackHoleArt {
 			us := table[min(bhNB-1, int(bhD*side*bhNB/bhBMax))]
 			if us[len(us)-1] >= 1 {
 				empty[k] = false
+				hole[k] += 1 / float64(g.sx*g.sy)
 			}
 			// images winding more than once round the hole only speckle its shadow
 			end := math.Min(float64(len(us)-1)*bhH, 5.6)
@@ -140,21 +154,68 @@ func traceBlackHole(cols, rows int) *blackHoleArt {
 					continue
 				}
 				phi := math.Atan2(math.Sin(a)*e2[2]-math.Cos(a)*c, math.Sin(a)*e2[0])
-				edge := math.Min(1, (r-bhIn)/0.7) * (1 - math.Pow((r-bhIn)/(bhOut-bhIn), 2))
-				doppler := 1 - 0.5*math.Cos(phi)
+				edge := math.Min(1, (r-bhIn)/g.fade) * (1 - math.Pow((r-bhIn)/(bhOut-bhIn), 2))
 				pos := (r - bhIn) / (bhOut - bhIn) * (bhBands - 1)
 				b0 := min(bhBands-2, int(pos))
 				empty[k] = false
-				art.cells[k] = append(art.cells[k], bhCrossing{b0, pos - float64(b0), phi,
-					light * edge * doppler * math.Pow(bhIn/r, 1.5) / (bhSX * bhSY)})
-				light *= 0.45 // a crossing seen through the disk is dimmer
+				gain := 1.0
+				if light < 1 {
+					gain = g.ring
+				}
+				cells[k] = append(cells[k], bhCrossing{b0, pos - float64(b0), phi,
+					light * edge * g.beam(phi) * math.Pow(bhIn/r, 1.5) / float64(g.sx*g.sy) * gain})
+				light *= g.dim // a crossing seen through the disk is dimmer
 			}
 		}
 	}
+	return cells, empty, hole
+}
+
+func traceBlackHole(cols, rows int) *blackHoleArt {
+	// each band's gas is a ring of noise: a few whole harmonics, so it closes
+	rnd := mulberry32(17)
+	art := &blackHoleArt{cols: cols, rows: rows}
+	for b := 0; b < bhBands; b++ {
+		r := bhIn + float64(bhOut-bhIn)*float64(b)/(bhBands-1)
+		art.turns = append(art.turns, float64(max(1, int(math.Round(bhSpin*math.Pow(bhIn/r, 1.5))))))
+		art.tabs = append(art.tabs, bandGas(&rnd, []float64{2, 3, 5, 8, 13}, bhTab))
+	}
+
+	cells, empty, _ := traceRays(bhRaster{
+		w: cols, h: rows, sx: bhSX, sy: bhSY, aspect: 2, dim: 0.45, ring: 1, fade: 0.7,
+		beam: func(phi float64) float64 { return 1 - 0.5*math.Cos(phi) },
+	})
+	art.cells = cells
+	art.stars = make([]bool, cols*rows)
 	for k := range art.stars {
 		art.stars[k] = empty[k] && rnd.next() < 0.03
 	}
 	return art
+}
+
+// gas is band b's brightness at angle a, from the nearest sample of its ring.
+func (art *blackHoleArt) gas(b int, a float64) float64 {
+	tab := art.tabs[b]
+	n := len(tab)
+	i := int(math.Floor(a/(2*math.Pi)*float64(n))) % n
+	if i < 0 {
+		i += n
+	}
+	return tab[i]
+}
+
+// emission sums a cell's crossings at spin angle turn: the light, the weight
+// of the light toward us, and the total weight. Band b is turned turns[b] times
+// over the spin.
+func (art *blackHoleArt) emission(h []bhCrossing, turn float64) (sum, toward, wsum float64) {
+	for _, x := range h {
+		g0 := art.gas(x.band, x.phi-art.turns[x.band]*turn)
+		g1 := art.gas(x.band+1, x.phi-art.turns[x.band+1]*turn)
+		sum += x.wt * (g0 + (g1-g0)*x.frac)
+		toward += x.wt * -math.Cos(x.phi)
+		wsum += x.wt
+	}
+	return sum, toward, wsum
 }
 
 // blackHole draws the frame at time t: glyph density from the light, colour
@@ -164,22 +225,8 @@ func blackHole(cols, rows int, t float64, p palette) *canvas {
 	cv := newCanvas(cols, rows)
 	ramp := []rune(" .:-=+*#%@")
 	turn := 2 * math.Pi * math.Mod(t, bhLoop) / bhLoop
-	at := func(b int, a float64) float64 {
-		i := int(math.Floor(a/(2*math.Pi)*bhTab)) % bhTab
-		if i < 0 {
-			i += bhTab
-		}
-		return art.tabs[b][i]
-	}
 	for k, h := range art.cells {
-		sum, toward, wsum := 0.0, 0.0, 0.0
-		for _, x := range h {
-			g0 := at(x.band, x.phi-float64(art.turns[x.band])*turn)
-			g1 := at(x.band+1, x.phi-float64(art.turns[x.band+1])*turn)
-			sum += x.wt * (g0 + (g1-g0)*x.frac)
-			toward += x.wt * -math.Cos(x.phi)
-			wsum += x.wt
-		}
+		sum, toward, wsum := art.emission(h, turn)
 		v := math.Pow(clamp01((sum*bhGain-bhFloor)/(1-bhFloor)), 0.75)
 		ch := ramp[int(math.Round(v*float64(len(ramp)-1)))]
 		if ch == ' ' {
