@@ -50,6 +50,19 @@ traced from devicon / Simple Icons artwork with ascii.rest's kit by
 `tools/logos/gen.sh <ascii.rest checkout>` — add a line there to add a logo).
 Logos are their owners' trademarks.
 
+## Graphics
+
+In terminals that speak the kitty graphics protocol with Unicode placeholders
+(kitty, Ghostty, Rex, probably others), the TUI shows real company logos
+(`assets/logos/<slug>.png`, with a monogram tile for a company without one) and
+shaded 3D pipes in the screensaver. Detection is a probe sent when you connect,
+so nothing needs setting over SSH. Locally, `TUI_KITTY=1` forces it on and
+`TUI_KITTY=0` forces it off; without that, `-local` and `-render` read `TERM` and
+`TERM_PROGRAM`. Everything else gets the text version. The images are sent once
+per visit, about 64 KB. The sidebar's black hole is a pixel render (`bhpixels.go`,
+16 transparent frames of 288x216 px, about 265 KB) sent a moment after the first
+screen; the terminal's own background shows round it.
+
 ## Layout notes
 
 Omarchy-inspired: fixed left nav pane, hairline separator, generous padding,
