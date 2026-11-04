@@ -12,6 +12,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
+	"github.com/rivo/uniseg"
 )
 
 var (
@@ -342,6 +343,61 @@ func TestOverlayOverKittyExperience(t *testing.T) {
 	for i := range pl {
 		if a, b := lipgloss.Width(kl[i]), lipgloss.Width(pl[i]); a != b {
 			t.Fatalf("row %d: %d cells with kitty, %d without", i, a, b)
+		}
+	}
+}
+
+// cols is the text of display columns [a, b) of a row, without styling.
+func cols(row string, a, b int) string {
+	var out strings.Builder
+	x := 0
+	rest := stripSGR(row)
+	for rest != "" {
+		var g string
+		var w int
+		g, rest, w, _ = uniseg.FirstGraphemeClusterInString(rest, -1)
+		if x >= a && x+w <= b {
+			out.WriteString(g)
+		}
+		x += w
+	}
+	return out.String()
+}
+
+// every dialog sits in the same columns with kitty images beside it as
+// without: an image cell is one column but several runes.
+func TestOverlayColumnsBesideKittyImages(t *testing.T) {
+	for _, mk := range []modalKind{modalHelp, modalTheme, modalNote} {
+		plain := expModel(2)
+		plain.modal = mk
+		kit := plain
+		kit.kitty, kit.bhReady = true, true
+		var dlg string
+		switch mk {
+		case modalHelp:
+			dlg = plain.helpDialog()
+		case modalTheme:
+			dlg = plain.themeDialog()
+		case modalNote:
+			dlg = plain.noteDialog()
+		}
+		dl := strings.Split(dlg, "\n")
+		dw := 0
+		for _, l := range dl {
+			dw = max(dw, lipgloss.Width(l))
+		}
+		x0, y0 := (plain.width-dw)/2, (plain.height-len(dl))/2
+		pl := strings.Split(view(plain), "\n")
+		kl := strings.Split(view(kit), "\n")
+		beside := false
+		for y := y0; y < y0+len(dl); y++ {
+			if a, b := cols(kl[y], x0, x0+dw), cols(pl[y], x0, x0+dw); a != b {
+				t.Fatalf("modal %d row %d: with kitty %q, without %q", mk, y, a, b)
+			}
+			beside = beside || strings.ContainsRune(cols(kl[y], 0, x0), kittyPlaceholder)
+		}
+		if !beside {
+			t.Fatalf("modal %d: no image beside the dialog, so the test proves nothing", mk)
 		}
 	}
 }

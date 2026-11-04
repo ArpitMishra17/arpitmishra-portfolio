@@ -12,6 +12,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
+	"github.com/rivo/uniseg"
 )
 
 type section int
@@ -710,8 +711,11 @@ func splitANSIAt(s string, col int) (string, string) {
 			i = j
 			continue
 		}
-		r, size := utf8.DecodeRuneInString(s[i:])
-		if width >= col && !cut {
+		// a whole grapheme at a time, measured as lipgloss measures it: a kitty
+		// placeholder and its row and column marks are one cell, a wide
+		// character two
+		g, _, w, _ := uniseg.FirstGraphemeClusterInString(s[i:], -1)
+		if !cut && width+w > col {
 			cut = true
 			if len(codes) > 0 {
 				left.WriteString("\x1b[0m")
@@ -719,14 +723,21 @@ func splitANSIAt(s string, col int) (string, string) {
 					right.WriteString(c)
 				}
 			}
+			// a wide character across the cut becomes spaces, so both halves keep their width
+			if width < col {
+				left.WriteString(strings.Repeat(" ", col-width))
+				right.WriteString(strings.Repeat(" ", width+w-col))
+				i += len(g)
+				continue
+			}
 		}
 		if cut {
-			right.WriteString(string(r))
+			right.WriteString(g)
 		} else {
-			left.WriteString(string(r))
-			width++
+			left.WriteString(g)
+			width += w
 		}
-		i += size
+		i += len(g)
 	}
 	return left.String(), right.String()
 }
