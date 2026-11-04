@@ -77,6 +77,8 @@ type model struct {
 	// where the uploads go, the same serialised writer bubbletea renders to.
 	kitty bool
 	gfx   io.Writer
+	// bhReady is set once the black hole's frames are in the terminal
+	bhReady bool
 
 	// Per-session look: each visitor gets their own theme and the colour
 	// profile their terminal supports. View applies both to the shared
@@ -149,6 +151,9 @@ func animTick(d time.Duration) tea.Cmd {
 	})
 }
 
+// bhReadyMsg says the black hole's frames have been sent to the terminal.
+type bhReadyMsg struct{}
+
 func (m model) Init() tea.Cmd {
 	cmds := []tea.Cmd{animTick(fastTick), tea.SetWindowTitle("arpit mishra — portfolio")}
 	if m.kitty && m.gfx != nil {
@@ -157,6 +162,15 @@ func (m model) Init() tea.Cmd {
 		cmds = append(cmds, func() tea.Msg {
 			_, _ = gfx.Write(imageUploads()) // one write, so the images arrive whole
 			return nil
+		})
+		// the black hole's frames come after the first screen, a write each
+		cmds = append(cmds, func() tea.Msg {
+			for _, up := range bhUploads() {
+				if _, err := gfx.Write(up); err != nil {
+					return nil // the client has gone; keep the text black hole
+				}
+			}
+			return bhReadyMsg{}
 		})
 	}
 	return tea.Batch(cmds...)
@@ -188,6 +202,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = clamp(msg.Width, 0, maxCols), clamp(msg.Height, 0, maxRows)
+	case bhReadyMsg:
+		m.bhReady = true
 	case animMsg:
 		now := time.Time(msg)
 		// no key for this long: end the session so abandoned clients free their slot
@@ -512,7 +528,11 @@ func (m model) viewApp(frame lipgloss.Style) string {
 	// a black hole turning its disk, when the sidebar has the room
 	art := ""
 	if innerH >= 30 {
-		art = blackHole(sidebarW-2, 9, m.st, paletteOf(activeColors)).render(m.profile) + "\n"
+		if m.kitty && m.bhReady {
+			art = strings.Join(kittyBlock(uint8(bhFrameID(bhFrameAt(m.st))), sidebarW-2, 9), "\n") + "\n"
+		} else {
+			art = blackHole(sidebarW-2, 9, m.st, paletteOf(activeColors)).render(m.profile) + "\n"
+		}
 	}
 
 	side := lipgloss.JoinVertical(lipgloss.Left,

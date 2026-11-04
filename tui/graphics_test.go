@@ -72,6 +72,9 @@ func TestImageIDs(t *testing.T) {
 			add(pipeSpriteID(c, p), fmt.Sprintf("pipe colour %d piece %d", c, p))
 		}
 	}
+	for f := range bhFrameN {
+		add(bhFrameID(f), fmt.Sprintf("black hole frame %d", f))
+	}
 }
 
 // every image is uploaded once, under its own id.
@@ -139,7 +142,8 @@ func cmdMsgs(cmd tea.Cmd) []tea.Msg {
 }
 
 // Init sends the uploads only when the terminal speaks kitty and there is a
-// writer for them, in one write.
+// writer for them. The images go in one write, then the black hole's frames a
+// write each, which reports bhReadyMsg.
 func TestInitUploads(t *testing.T) {
 	cases := []struct {
 		name       string
@@ -148,7 +152,7 @@ func TestInitUploads(t *testing.T) {
 	}{
 		{"no kitty", false, true, 0},
 		{"kitty without a writer", true, false, 0},
-		{"kitty", true, true, 1},
+		{"kitty", true, true, 1 + bhFrameN},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -158,14 +162,108 @@ func TestInitUploads(t *testing.T) {
 			if c.gfx {
 				m.gfx = w
 			}
-			cmdMsgs(m.Init())
+			msgs := cmdMsgs(m.Init())
 			if w.writes != c.writes {
 				t.Fatalf("%d writes, want %d", w.writes, c.writes)
 			}
-			if c.writes > 0 && !bytes.Equal(w.Bytes(), imageUploads()) {
-				t.Fatal("the write is not the image uploads")
+			ready := false
+			for _, msg := range msgs {
+				_, ok := msg.(bhReadyMsg)
+				ready = ready || ok
+			}
+			if ready != (c.writes > 0) {
+				t.Fatalf("bhReadyMsg sent %v with %d writes", ready, c.writes)
+			}
+			if c.writes > 0 {
+				want := append([]byte(nil), imageUploads()...)
+				for _, up := range bhUploads() {
+					want = append(want, up...)
+				}
+				if !bytes.Equal(w.Bytes(), want) {
+					t.Fatal("the writes are not the image uploads, then the black hole's frames")
+				}
 			}
 		})
+	}
+}
+
+// the sidebar's black hole is the kitty frame only when the terminal speaks
+// kitty and the frames are in. Before that, and without kitty, it is the text
+// version, and the rows keep their width either way.
+func TestSidebarBlackHoleFrame(t *testing.T) {
+	plain := expModel(0)
+	plain.sec = secOverview
+	kit := plain
+	kit.kitty = true
+	if view(kit) != view(plain) {
+		t.Fatal("kitty without the frames changed the sidebar")
+	}
+	ready := kit
+	ready.bhReady = true
+	for f := 0; f < bhFrameN; f++ {
+		m := ready
+		m.st = (float64(f) + 0.5) * bhFrameDur
+		out := view(m)
+		want := fmt.Sprintf("\x1b[38;5;%dm", bhFrameID(f))
+		if !strings.Contains(out, want) {
+			t.Fatalf("frame %d: the view does not show image %d", f, bhFrameID(f))
+		}
+		for g := 0; g < bhFrameN; g++ {
+			if g != f && strings.Contains(out, fmt.Sprintf("\x1b[38;5;%dm", bhFrameID(g))) {
+				t.Fatalf("frame %d: the view also shows image %d", f, bhFrameID(g))
+			}
+		}
+		for _, row := range kittyBlock(uint8(bhFrameID(f)), sidebarW-2, 9) {
+			if !strings.Contains(out, row) {
+				t.Fatalf("frame %d: a sidebar row is missing", f)
+			}
+		}
+	}
+	if !strings.Contains(view(ready), "38;5;100m") {
+		t.Fatal("the frame at scene start is not image 100")
+	}
+	if strings.ContainsRune(view(plain), kittyPlaceholder) {
+		t.Fatal("placeholders in the sidebar without kitty")
+	}
+}
+
+func TestSidebarBlackHoleWidth(t *testing.T) {
+	for _, sz := range [][2]int{{80, 40}, {120, 40}, {160, 50}} {
+		plain := expModel(0)
+		plain.sec = secOverview
+		plain.width, plain.height = sz[0], sz[1]
+		ready := plain
+		ready.kitty, ready.bhReady = true, true
+		ready.st = 2
+		pl := strings.Split(view(plain), "\n")
+		kl := strings.Split(view(ready), "\n")
+		if len(kl) != len(pl) {
+			t.Fatalf("%dx%d: %d rows with the frame, %d without", sz[0], sz[1], len(kl), len(pl))
+		}
+		for i := range pl {
+			if a, b := lipgloss.Width(kl[i]), lipgloss.Width(pl[i]); a != b {
+				t.Fatalf("%dx%d row %d: %d cells with the frame, %d without", sz[0], sz[1], i, a, b)
+			}
+		}
+	}
+	for _, l := range kittyBlock(uint8(bhFrameID(0)), sidebarW-2, 9) {
+		if got := lipgloss.Width(l); got != sidebarW-2 {
+			t.Fatalf("black hole row is %d cells wide, want %d", got, sidebarW-2)
+		}
+	}
+}
+
+// the frames' upload reports ready, and the model takes it.
+func TestBHReady(t *testing.T) {
+	m := expModel(0)
+	m.kitty = true
+	m.gfx = &countWriter{}
+	if m.bhReady {
+		t.Fatal("ready before the frames are sent")
+	}
+	got, _ := m.Update(bhReadyMsg{})
+	if !got.(model).bhReady {
+		t.Fatal("bhReadyMsg did not set bhReady")
 	}
 }
 

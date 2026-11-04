@@ -108,6 +108,7 @@ func main() {
 		fmt.Println(mdl2.View())
 		return
 	}
+	go bhFrames() // the black hole's frames take a moment; build them before the first visitor
 	if len(os.Args) > 1 && os.Args[1] == "-local" {
 		// Renders the TUI straight in the current terminal, no SSH involved.
 		// Useful for fast iteration: go run . -local
