@@ -150,7 +150,16 @@ func animTick(d time.Duration) tea.Cmd {
 }
 
 func (m model) Init() tea.Cmd {
-	return tea.Batch(animTick(fastTick), tea.SetWindowTitle("arpit mishra — portfolio"))
+	cmds := []tea.Cmd{animTick(fastTick), tea.SetWindowTitle("arpit mishra — portfolio")}
+	if m.kitty && m.gfx != nil {
+		gfx := m.gfx
+		// bubbletea enters the alt screen before it runs Init, so this comes after that
+		cmds = append(cmds, func() tea.Msg {
+			_, _ = gfx.Write(imageUploads()) // one write, so the images arrive whole
+			return nil
+		})
+	}
+	return tea.Batch(cmds...)
 }
 
 // since is seconds from t to this frame.
@@ -979,9 +988,15 @@ func (m model) viewExperience(w int) string {
 		if m.prevExp >= 0 {
 			prev = experiences[m.prevExp]
 		}
+		// with kitty, the company's logo sits beside the role and company lines
+		var logo [2]string
+		if m.kitty {
+			rows := kittyBlock(uint8(expImageID(m.expSel)), expLogoCols, expLogoRows)
+			logo = [2]string{rows[0] + "  ", rows[1] + "  "}
+		}
 		det := new(strings.Builder)
-		det.WriteString(m.flapped(prev.role, e.role, stName) + "\n")
-		det.WriteString(m.flapped(prev.company, e.company, stSection) + "  " + m.flapped(prev.period, e.period, stDim) + "\n\n")
+		det.WriteString(logo[0] + m.flapped(prev.role, e.role, stName) + "\n")
+		det.WriteString(logo[1] + m.flapped(prev.company, e.company, stSection) + "  " + m.flapped(prev.period, e.period, stDim) + "\n\n")
 		for i, p := range e.points {
 			det.WriteString(m.staggered(i, bullet(p, w-listW-8)) + "\n\n")
 		}
