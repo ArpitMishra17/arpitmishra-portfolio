@@ -53,6 +53,7 @@ func main() {
 			profile = termenv.TrueColor
 		}
 		mdl := newModel(1, profile)
+		mdl.kitty = kittyFromEnv(os.Getenv) // prints placeholders; nothing is uploaded
 		// stills show everything settled: intro over, titles decoded, bio typed.
 		// TUI_SINCE=0.2 instead freezes transitions 0.2s in, to inspect them.
 		long := 100 * time.Second
@@ -112,7 +113,12 @@ func main() {
 		// Useful for fast iteration: go run . -local
 		loadGuestbookCount()
 		hub.join(1, visitorName(os.Getenv("USER")))
-		if _, err := newProgram(1).Run(); err != nil {
+		// renders and uploads share one locked stdout
+		lw := &lockedWriter{w: os.Stdout}
+		m := newModel(1, lipgloss.ColorProfile())
+		m.kitty = kittyFromEnv(os.Getenv)
+		m.gfx = lw
+		if _, err := newProgram(m, localOut{File: os.Stdout, lw: lw}).Run(); err != nil {
 			log.Error("local run failed", "error", err)
 			os.Exit(1)
 		}
@@ -144,6 +150,10 @@ func main() {
 				// sessionScope has already put the session on the hub
 				m := newModel(sessionID(s), sessionProfile(s))
 				m.ip = remoteHost(s.RemoteAddr())
+				if sc, ok := s.(*scopedSession); ok {
+					m.kitty = sc.probeKitty(1500 * time.Millisecond)
+					m.gfx = sc
+				}
 				return m, []tea.ProgramOption{tea.WithAltScreen()}
 			}),
 			sessionScope(),
@@ -201,3 +211,13 @@ func (e sshEnv) Getenv(key string) string {
 	}
 	return ""
 }
+
+// localOut is stdout as bubbletea's output. Writes go through lw, the lock the
+// image uploads share. The embedded file keeps the tty, which bubbletea needs
+// for the window size and the terminal state.
+type localOut struct {
+	*os.File
+	lw *lockedWriter
+}
+
+func (o localOut) Write(p []byte) (int, error) { return o.lw.Write(p) }

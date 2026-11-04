@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"math"
 	"strings"
 	"sync"
@@ -72,6 +73,11 @@ type model struct {
 	session       int
 	ip            string // visitor's host address, for guestbook rate limits; empty locally
 
+	// kitty: the terminal shows images through Unicode placeholders. gfx is
+	// where the uploads go, the same serialised writer bubbletea renders to.
+	kitty bool
+	gfx   io.Writer
+
 	// Per-session look: each visitor gets their own theme and the colour
 	// profile their terminal supports. View applies both to the shared
 	// palette globals while it renders (see renderMu).
@@ -133,8 +139,8 @@ func newModel(session int, profile termenv.Profile) model {
 	}
 }
 
-func newProgram(session int) *tea.Program {
-	return tea.NewProgram(newModel(session, lipgloss.ColorProfile()), tea.WithAltScreen())
+func newProgram(m model, out io.Writer) *tea.Program {
+	return tea.NewProgram(m, tea.WithAltScreen(), tea.WithOutput(out))
 }
 
 func animTick(d time.Duration) tea.Cmd {
