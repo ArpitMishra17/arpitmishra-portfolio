@@ -432,16 +432,17 @@ func expImageID(i int) int { return 1 + i }
 // p. The ids start after the experience ids, so they never overlap.
 func pipeSpriteID(c int, p pipePiece) int { return 32 + c*int(pipePieces) + int(p) }
 
-// imageUploads is every image the TUI can show, as kitty upload escapes. It is
-// built once per process; a session that speaks the protocol is sent it once.
-var imageUploads = sync.OnceValue(func() []byte {
-	var out []byte
+// imageUploads is every image the TUI can show, as kitty upload escapes, one
+// image apiece. It is built once per process; a session that speaks the
+// protocol is sent it once, an image a write.
+var imageUploads = sync.OnceValue(func() [][]byte {
+	var out [][]byte
 	for i, e := range experiences {
-		out = append(out, kittyUpload(uint8(expImageID(i)), experienceImagePNG(e.company), expLogoCols, expLogoRows)...)
+		out = append(out, kittyUpload(uint8(expImageID(i)), experienceImagePNG(e.company), expLogoCols, expLogoRows))
 	}
 	for c := range pipeColors {
 		for p := pipePiece(0); p < pipePieces; p++ {
-			out = append(out, kittyUpload(uint8(pipeSpriteID(c, p)), pipeSpritePNG(p, c), 1, 1)...)
+			out = append(out, kittyUpload(uint8(pipeSpriteID(c, p)), pipeSpritePNG(p, c), 1, 1))
 		}
 	}
 	return out

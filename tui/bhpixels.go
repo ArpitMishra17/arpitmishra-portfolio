@@ -31,7 +31,7 @@ const (
 	bhPxGain     = 2.0             // exposure before the tone curve
 	bhPxEdge     = 24              // the gas fades out over this many pixels at the image's sides, so the disk isn't cut off
 	bhFrameN     = 16              // frames in a loop
-	bhFrameDur   = 0.15            // seconds a frame stays up
+	bhFrameStep  = 0.09            // scene seconds before the next frame: a resting tick (0.12 s) or two fast ones (0.05 s)
 )
 
 // px is one pixel's colour and opacity, eight bits a channel, not premultiplied.
@@ -245,7 +245,7 @@ var bhFrames = sync.OnceValue(func() [][]byte {
 
 // bhUploads is each frame as kitty upload escapes, one write apiece: a frame
 // is whole within its write, and frames of the TUI can go out between them,
-// so a slow link doesn't freeze the screen behind 300 KB of images.
+// so a slow link doesn't freeze the screen behind all the frames.
 var bhUploads = sync.OnceValue(func() [][]byte {
 	frames := bhFrames()
 	out := make([][]byte, len(frames))
@@ -257,12 +257,3 @@ var bhUploads = sync.OnceValue(func() [][]byte {
 
 // bhFrameID is the kitty image id of frame f. It sits past the pipe sprites.
 func bhFrameID(f int) int { return 100 + f }
-
-// bhFrameAt is the frame showing at scene time st.
-func bhFrameAt(st float64) int {
-	f := int(math.Floor(st/bhFrameDur)) % bhFrameN
-	if f < 0 {
-		f += bhFrameN
-	}
-	return f
-}

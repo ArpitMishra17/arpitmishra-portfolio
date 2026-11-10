@@ -4,6 +4,7 @@ import (
 	"math"
 	"slices"
 	"testing"
+	"time"
 )
 
 func absInt(v int) int {
@@ -103,21 +104,38 @@ func TestBlackHoleLight(t *testing.T) {
 	}
 }
 
-// bhFrameAt maps scene time to a frame, and wraps at the loop.
-func TestBlackHoleFrameAt(t *testing.T) {
-	cases := []struct {
-		st   float64
-		want int
-	}{
-		{0, 0},
-		{bhFrameDur * 3.5, 3},
-		{bhFrameDur * bhFrameN, 0},
-		{bhFrameDur*bhFrameN + bhFrameDur*2.2, 2},
-		{-0.01, bhFrameN - 1},
-	}
-	for _, c := range cases {
-		if got := bhFrameAt(c.st); got != c.want {
-			t.Errorf("bhFrameAt(%v) = %d, want %d", c.st, got, c.want)
+// the black hole steps one frame every resting tick, even when the ticks run a
+// little long, and one every two fast ticks; it wraps at the loop, and holds
+// while nothing animates.
+func TestBlackHoleStepsByTick(t *testing.T) {
+	run := func(m model, ticks []time.Duration) []int {
+		var got []int
+		for _, d := range ticks {
+			next, _ := m.Update(animMsg(m.at.Add(d)))
+			m = next.(model)
+			got = append(got, m.bhFrame)
 		}
+		return got
+	}
+	resting := []time.Duration{120, 121, 126, 133, 119, 124, 140, 122}
+	for i := range resting {
+		resting[i] *= time.Millisecond
+	}
+	m := expModel(0)
+	m.sec = secOverview
+	if got := run(m, resting); !slices.Equal(got, []int{1, 2, 3, 4, 5, 6, 7, 8}) {
+		t.Fatalf("resting ticks: frames %v", got)
+	}
+	fast := slices.Repeat([]time.Duration{50 * time.Millisecond}, 6)
+	if got := run(m, fast); !slices.Equal(got, []int{0, 1, 1, 2, 2, 3}) {
+		t.Fatalf("fast ticks: frames %v", got)
+	}
+	m.bhFrame = bhFrameN - 1
+	if got := run(m, resting[:1]); got[0] != 0 {
+		t.Fatalf("frame %d after the last, want 0", got[0])
+	}
+	m.still = true
+	if got := run(m, resting[:3]); !slices.Equal(got, []int{bhFrameN - 1, bhFrameN - 1, bhFrameN - 1}) {
+		t.Fatalf("still: frames %v", got)
 	}
 }

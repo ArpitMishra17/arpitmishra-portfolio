@@ -78,8 +78,11 @@ type model struct {
 	// where the uploads go, the same serialised writer bubbletea renders to.
 	kitty bool
 	gfx   io.Writer
-	// bhReady is set once the black hole's frames are in the terminal
+	// bhReady is set once the black hole's frames are in the terminal. bhFrame
+	// is the frame showing, and bhAcc the scene time since it last stepped.
 	bhReady bool
+	bhFrame int
+	bhAcc   float64
 
 	// Per-session look: each visitor gets their own theme and the colour
 	// profile their terminal supports. View applies both to the shared
@@ -159,16 +162,16 @@ func (m model) Init() tea.Cmd {
 	cmds := []tea.Cmd{animTick(fastTick), tea.SetWindowTitle("arpit mishra — portfolio")}
 	if m.kitty && m.gfx != nil {
 		gfx := m.gfx
-		// bubbletea enters the alt screen before it runs Init, so this comes after that
+		// bubbletea enters the alt screen before it runs Init, so this comes
+		// after that. An image a write: each arrives whole, and frames of the
+		// TUI go out between them, so a slow link never freezes the screen
+		// behind the whole lot. The black hole's frames go last.
 		cmds = append(cmds, func() tea.Msg {
-			_, _ = gfx.Write(imageUploads()) // one write, so the images arrive whole
-			return nil
-		})
-		// the black hole's frames come after the first screen, a write each
-		cmds = append(cmds, func() tea.Msg {
-			for _, up := range bhUploads() {
-				if _, err := gfx.Write(up); err != nil {
-					return nil // the client has gone; keep the text black hole
+			for _, ups := range [][][]byte{imageUploads(), bhUploads()} {
+				for _, up := range ups {
+					if _, err := gfx.Write(up); err != nil {
+						return nil // the client has gone; keep the text black hole
+					}
 				}
 			}
 			return bhReadyMsg{}
@@ -216,6 +219,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.tick++
 		if m.animating() {
 			m.st += dt
+			// the black hole steps a frame a resting tick (two fast ones), not by
+			// the clock: a clock a little off the tick would hold some frames
+			// twice as long as others, and the disk would stutter
+			if m.bhAcc += dt; m.bhAcc >= bhFrameStep {
+				m.bhFrame, m.bhAcc = (m.bhFrame+1)%bhFrameN, 0
+			}
 		}
 		if m.booting && m.since(m.startAt) >= bootDur {
 			m.endBoot()
@@ -530,7 +539,7 @@ func (m model) viewApp(frame lipgloss.Style) string {
 	art := ""
 	if innerH >= 30 {
 		if m.kitty && m.bhReady {
-			art = strings.Join(kittyBlock(uint8(bhFrameID(bhFrameAt(m.st))), sidebarW-2, 9), "\n") + "\n"
+			art = strings.Join(kittyBlock(uint8(bhFrameID(m.bhFrame)), sidebarW-2, 9), "\n") + "\n"
 		} else {
 			art = blackHole(sidebarW-2, 9, m.st, paletteOf(activeColors)).render(m.profile) + "\n"
 		}

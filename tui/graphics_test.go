@@ -80,8 +80,17 @@ func TestImageIDs(t *testing.T) {
 
 // every image is uploaded once, under its own id.
 func TestImageUploads(t *testing.T) {
-	up := imageUploads()
+	ups := imageUploads()
 	images := len(experiences) + len(pipeColors)*int(pipePieces)
+	if len(ups) != images {
+		t.Fatalf("%d uploads, want one for each of %d images", len(ups), images)
+	}
+	for i, u := range ups {
+		if n := bytes.Count(u, []byte("\x1b_Ga=T")); n != 1 {
+			t.Fatalf("upload %d holds %d transmissions, want 1", i, n)
+		}
+	}
+	up := bytes.Join(ups, nil)
 	t.Logf("kitty uploads: %d images, %d bytes", images, len(up))
 	if !bytes.HasPrefix(up, []byte("\x1b_G")) {
 		t.Fatal("uploads do not start with a graphics escape")
@@ -143,8 +152,8 @@ func cmdMsgs(cmd tea.Cmd) []tea.Msg {
 }
 
 // Init sends the uploads only when the terminal speaks kitty and there is a
-// writer for them. The images go in one write, then the black hole's frames a
-// write each, which reports bhReadyMsg.
+// writer for them: an image a write, the black hole's frames last, and then
+// bhReadyMsg.
 func TestInitUploads(t *testing.T) {
 	cases := []struct {
 		name       string
@@ -153,7 +162,7 @@ func TestInitUploads(t *testing.T) {
 	}{
 		{"no kitty", false, true, 0},
 		{"kitty without a writer", true, false, 0},
-		{"kitty", true, true, 1 + bhFrameN},
+		{"kitty", true, true, len(imageUploads()) + bhFrameN},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -176,10 +185,7 @@ func TestInitUploads(t *testing.T) {
 				t.Fatalf("bhReadyMsg sent %v with %d writes", ready, c.writes)
 			}
 			if c.writes > 0 {
-				want := append([]byte(nil), imageUploads()...)
-				for _, up := range bhUploads() {
-					want = append(want, up...)
-				}
+				want := append(bytes.Join(imageUploads(), nil), bytes.Join(bhUploads(), nil)...)
 				if !bytes.Equal(w.Bytes(), want) {
 					t.Fatal("the writes are not the image uploads, then the black hole's frames")
 				}
@@ -203,7 +209,7 @@ func TestSidebarBlackHoleFrame(t *testing.T) {
 	ready.bhReady = true
 	for f := 0; f < bhFrameN; f++ {
 		m := ready
-		m.st = (float64(f) + 0.5) * bhFrameDur
+		m.bhFrame = f
 		out := view(m)
 		want := fmt.Sprintf("\x1b[38;5;%dm", bhFrameID(f))
 		if !strings.Contains(out, want) {
