@@ -37,7 +37,7 @@
   --cell-hover: color-mix(in srgb, var(--bg2) 92%, var(--accent) 8%);
 
   /* Height of the ssh strip above the nav */
-  --strip-h: 32px;
+  --strip-h: 38px;
 }
 
 [data-theme="light"] {
@@ -254,10 +254,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
     font-size: 12px;
-    border-bottom: 1px solid var(--border);
-    background: color-mix(in srgb, var(--accent) 9%, var(--bg));
+    border-bottom: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+    background: var(--bg2);
     transition:
       transform var(--dur-ui) var(--ease-out),
       opacity var(--dur-ui) var(--ease-out);
@@ -267,6 +267,32 @@
     transform: translateY(-100%);
     opacity: 0;
     pointer-events: none;
+  }
+
+  /* In the strip the command is the focus: an accent-ringed terminal pill with a
+     live caret, so it reads as a prompt rather than an announcement. */
+  .ssh-strip .ssh-cmd {
+    padding: 4px 12px;
+    background: var(--bg);
+    border-color: var(--accent);
+    box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+
+  .ssh-strip .ssh-cmd > span:nth-child(2)::after {
+    content: '';
+    display: inline-block;
+    width: 0.55em;
+    height: 1.05em;
+    margin-left: 3px;
+    vertical-align: text-bottom;
+    background: var(--accent);
+    animation: caretBlink 1.1s steps(1) infinite;
+  }
+
+  .ssh-strip .ssh-copy {
+    padding-left: 8px;
+    border-left: 1px solid var(--border);
+    color: var(--accent);
   }
 
   /* ─── ssh hint (command + "?" tooltip) ─── */
@@ -417,6 +443,10 @@
 }
 
 /* ─── Animations (unlayered is fine — keyframes don't conflict) ─── */
+@keyframes caretBlink {
+  50% { opacity: 0; }
+}
+
 @keyframes eqBar {
   0%, 100% { transform: scaleY(1); }
   50% { transform: scaleY(0.3); }
@@ -548,6 +578,10 @@
 
   /* Infinite decorative loops stop entirely. */
   .eq-bar {
+    animation: none;
+  }
+
+  .ssh-strip .ssh-cmd > span:nth-child(2)::after {
     animation: none;
   }
 

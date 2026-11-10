@@ -12,7 +12,7 @@ export default function SshStrip({ visible }: SshStripProps) {
   return (
     <div className="ssh-strip" data-visible={visible} inert={!visible}>
       <span className="hidden sm:inline" style={{ color: 'var(--dim)' }}>
-        ✦ this site also lives in your terminal:
+        <span style={{ color: 'var(--accent)' }}>//</span> prefer a terminal? run
       </span>
       <SshHint tipSide="below" compact />
     </div>
