@@ -74,7 +74,7 @@ export default function Contact() {
         className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 mt-4 pt-6 border-t text-[13px]"
         style={{ borderColor: 'var(--border)' }}
       >
-        <span style={{ color: 'var(--dim)' }}>prefer a terminal?</span>
+        <span className="ssh-hand">try it in your terminal</span>
         <SshHint tipSide="above" />
       </div>
     </div>

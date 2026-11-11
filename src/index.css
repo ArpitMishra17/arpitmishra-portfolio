@@ -9,6 +9,16 @@
   font-display: swap;
 }
 
+/* Caveat 600, subset to the strip note's characters (OFL). Regenerate the
+   file if that text changes. */
+@font-face {
+  font-family: 'Caveat';
+  src: url('/fonts/Caveat-600-subset.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ─── CSS Variables (unlayered is fine for custom properties) ─── */
 :root {
   --bg: #08080a;
@@ -271,6 +281,67 @@
 
   /* In the strip the command is the focus: an accent-ringed terminal pill with a
      live caret, so it reads as a prompt rather than an announcement. */
+  /* Handwritten note hanging below the bar, arrow pointing up at the command.
+     Overflows the strip onto the empty middle of the nav row; desktop only. */
+  .ssh-anchor {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .ssh-note {
+    position: absolute;
+    top: calc(100% + 2px);
+    /* Arrow tip (12px into the svg) on the centre of the command pill, which is
+       the anchor minus the 26px taken by the "?" button and its gap. */
+    left: calc((100% - 26px) / 2 - 12px);
+    display: none;
+    align-items: flex-start;
+    gap: 4px;
+    color: var(--accent);
+    white-space: nowrap;
+    pointer-events: none;
+    transition: opacity var(--dur-ui) var(--ease-out);
+  }
+
+  /* Drawn on each page load: the arrow strokes in, then the words are written
+     left to right. The hidden states live in the keyframes, so with motion
+     reduced (animation: none) the note simply shows. */
+  .ssh-note-shaft {
+    animation: noteDraw 0.5s var(--ease-out) 0.4s both;
+  }
+
+  .ssh-note-head {
+    animation: noteDraw 0.2s var(--ease-out) 0.85s both;
+  }
+
+  .ssh-note span {
+    animation: noteWrite 1.3s var(--ease-in-out) 1.05s both;
+    margin-top: 20px;
+  }
+
+  .ssh-note span,
+  .ssh-hand {
+    font-family: 'Caveat', cursive;
+    font-size: 21px;
+    line-height: 1;
+    transform: rotate(-3deg);
+  }
+
+  .ssh-hand {
+    color: var(--accent);
+  }
+
+  @media (min-width: 1024px) {
+    .ssh-note {
+      display: flex;
+    }
+  }
+
+  /* Hand the space to the "?" tooltip while it is open. */
+  .ssh-anchor:has(.ssh-help:hover, .ssh-help[data-open='true'], .ssh-q:focus-visible) .ssh-note {
+    opacity: 0;
+  }
+
   .ssh-strip .ssh-cmd {
     padding: 4px 12px;
     background: var(--bg);
@@ -443,6 +514,16 @@
 }
 
 /* ─── Animations (unlayered is fine — keyframes don't conflict) ─── */
+@keyframes noteDraw {
+  from { stroke-dasharray: 1; stroke-dashoffset: 1; }
+  to { stroke-dasharray: 1; stroke-dashoffset: 0; }
+}
+
+@keyframes noteWrite {
+  from { clip-path: inset(-6px 100% -6px -2px); }
+  to { clip-path: inset(-6px -4px -6px -2px); }
+}
+
 @keyframes caretBlink {
   50% { opacity: 0; }
 }
@@ -581,7 +662,10 @@
     animation: none;
   }
 
-  .ssh-strip .ssh-cmd > span:nth-child(2)::after {
+  .ssh-strip .ssh-cmd > span:nth-child(2)::after,
+  .ssh-note-shaft,
+  .ssh-note-head,
+  .ssh-note span {
     animation: none;
   }
 
