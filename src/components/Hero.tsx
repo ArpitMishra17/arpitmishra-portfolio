@@ -1,6 +1,26 @@
-import { Suspense, lazy, useState } from 'react'
-import AsciiShader from './AsciiShader'
+import { Suspense, lazy, useState, useSyncExternalStore } from 'react'
 import { RESUME_IMG } from '../lib/resume'
+
+// The dithered portrait only shows from md up. Phones never download the
+// shader code or its image, and desktops fetch them after first paint.
+const AsciiShader = lazy(() => import('./AsciiShader'))
+const DESKTOP_QUERY = '(min-width: 768px)'
+
+function subscribeDesktop(onChange: () => void) {
+  const mq = window.matchMedia(DESKTOP_QUERY)
+  mq.addEventListener('change', onChange)
+  return () => mq.removeEventListener('change', onChange)
+}
+
+// Server snapshot is false so prerendered HTML and the first client render
+// agree; React re-renders with the real value straight after hydrating.
+function useIsDesktop() {
+  return useSyncExternalStore(
+    subscribeDesktop,
+    () => window.matchMedia(DESKTOP_QUERY).matches,
+    () => false,
+  )
+}
 
 // three.js only loads once someone shows interest in the resume.
 const loadResumeModal = () => import('./ResumeModal')
@@ -17,6 +37,7 @@ function preloadResume() {
 
 export default function Hero() {
   const [resumeOpen, setResumeOpen] = useState(false)
+  const isDesktop = useIsDesktop()
 
   return (
     <section
@@ -25,7 +46,11 @@ export default function Hero() {
       style={{ borderColor: 'var(--border)' }}
     >
       <div className="relative overflow-hidden w-full h-full hidden md:flex items-center justify-center">
-        <AsciiShader />
+        {isDesktop && (
+          <Suspense fallback={null}>
+            <AsciiShader />
+          </Suspense>
+        )}
       </div>
 
       <div className="max-w-[530px] px-8 py-10 md:py-0">

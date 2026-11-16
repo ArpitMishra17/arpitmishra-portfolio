@@ -6,7 +6,7 @@ export default function AsciiShader() {
   return (
     <ImageDithering
       {...naturalPreset}
-      image="/hero.jpg"
+      image="/hero.webp"
       originalColors
       inverted={false}
       type="8x8"
