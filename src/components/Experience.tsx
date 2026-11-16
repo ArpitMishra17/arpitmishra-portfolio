@@ -60,6 +60,27 @@ const experiences = [
   },
 ]
 
+// Phone-width (< sm) labels for roles and companies. Full text still renders
+// on wider screens; the swap is CSS-only so prerendered and client markup match.
+const SHORT_LABELS: Record<string, string> = {
+  'Software Development Intern': 'SDE Intern',
+  'Software Engineering Intern': 'SWE Intern',
+  'Open Source Contributor': 'OSS Contributor',
+  'Python Developer Intern': 'Intern',
+  'K J Somaiya College of Engineering': 'KJSCE',
+}
+
+function PhoneShort({ text }: { text: string }) {
+  const short = SHORT_LABELS[text]
+  if (!short) return text
+  return (
+    <>
+      <span className="sm:hidden">{short}</span>
+      <span className="hidden sm:inline">{text}</span>
+    </>
+  )
+}
+
 function renderBulletPoints(htmlLikeText: string) {
   const points = htmlLikeText.split(/<br\s*\/?>/gi).filter(p => p.trim())
   return (
@@ -136,13 +157,13 @@ export default function Experience() {
                             color: 'var(--fg)',
                           }}
                         >
-                          {exp.role}
+                          <PhoneShort text={exp.role} />
                         </span>
                         <span
                           className="text-[15px] md:text-[18px] italic"
                           style={{ color: 'var(--accent)' }}
                         >
-                          @ {exp.company}
+                          @ <PhoneShort text={exp.company} />
                         </span>
                       </div>
                       <svg
