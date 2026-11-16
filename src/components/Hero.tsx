@@ -1,6 +1,23 @@
+import { Suspense, lazy, useState } from 'react'
 import AsciiShader from './AsciiShader'
+import { RESUME_IMG } from '../lib/resume'
+
+// three.js only loads once someone shows interest in the resume.
+const loadResumeModal = () => import('./ResumeModal')
+const ResumeModal = lazy(loadResumeModal)
+
+let preloaded = false
+function preloadResume() {
+  if (preloaded) return
+  preloaded = true
+  void loadResumeModal()
+  const img = new Image()
+  img.src = RESUME_IMG
+}
 
 export default function Hero() {
+  const [resumeOpen, setResumeOpen] = useState(false)
+
   return (
     <section
       id="hero"
@@ -31,15 +48,24 @@ export default function Hero() {
           </p>
 
           <div className="flex gap-2.5 items-center mb-8">
-            <a
-              href="#"
-              className="hover-outline pressable inline-flex items-center gap-1.5 px-5 py-2.5 text-[13px] tracking-wider select-none"
+            <button
+              type="button"
+              onClick={() => setResumeOpen(true)}
+              onPointerEnter={preloadResume}
+              onFocus={preloadResume}
+              aria-haspopup="dialog"
+              className="hover-outline pressable inline-flex items-center gap-1.5 px-5 py-2.5 text-[13px] tracking-wider select-none cursor-pointer"
             >
               <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6z" />
               </svg>
               Resume
-            </a>
+            </button>
+            {resumeOpen && (
+              <Suspense fallback={null}>
+                <ResumeModal onClose={() => setResumeOpen(false)} />
+              </Suspense>
+            )}
           </div>
 
           <div className="flex gap-8 items-center">

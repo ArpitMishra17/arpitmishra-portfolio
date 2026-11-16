@@ -597,6 +597,43 @@
   }
 }
 
+/* ─── Resume modal ─── */
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+}
+
+@keyframes modal-panel-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+}
+
+.modal-backdrop {
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: modal-fade-in var(--dur-ui) var(--ease-out);
+  transition: opacity 160ms var(--ease-out);
+}
+
+.modal-panel {
+  box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.5);
+  animation: modal-panel-in var(--dur-reveal) var(--ease-out);
+  transition:
+    opacity 160ms var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+
+.modal-panel:focus {
+  outline: none;
+}
+
+.modal-backdrop[data-closing] {
+  opacity: 0;
+}
+
+.modal-backdrop[data-closing] .modal-panel {
+  transform: scale(0.98);
+}
+
 /* ─── Reduced motion ───
    Fewer and gentler, not zero: keep opacity and colour, drop movement. */
 @media (prefers-reduced-motion: reduce) {
@@ -672,5 +709,10 @@
   .scrub-bar {
     animation: none;
     transform: scaleX(1);
+  }
+
+  .modal-backdrop,
+  .modal-panel {
+    animation-name: modal-fade-in;
   }
 }
