@@ -12,9 +12,11 @@ import {
   MeshLambertMaterial,
   PerspectiveCamera,
   PlaneGeometry,
+  Raycaster,
   SRGBColorSpace,
   Scene,
   TextureLoader,
+  Vector2,
   WebGLRenderer,
 } from 'three'
 import type { Texture } from 'three'
@@ -38,8 +40,26 @@ const FOV = 20
 const TAN_HALF_FOV = Math.tan(MathUtils.degToRad(FOV / 2))
 const MAX_ZOOM = 2.6
 const PAPER_THICKNESS = 0.006
+/* Phones go edge to edge: the page spans the full width, so tilt is capped
+   lower to keep its silhouette within a 2% margin. */
+const COMPACT_MAX_W = 640
+const COMPACT_FRAME_X = 1.02
+const COMPACT_MAX_TILT = MathUtils.degToRad(15)
 
-type Layout = { w: number; h: number; paperW: number; paperH: number }
+type Layout = { w: number; h: number; paperW: number; paperH: number; maxTilt: number }
+
+const isCompact = () => window.innerWidth < COMPACT_MAX_W
+
+/* Full-screen phone layout: the canvas takes whatever box it's given and the
+   page is fitted inside it. */
+function compactLayout(w: number, h: number): Layout {
+  const paperH = Math.floor(Math.min(PAGE_H * TARGET_SCALE, h / FRAME_Y, w / COMPACT_FRAME_X / ASPECT))
+  return { w, h, paperW: paperH * ASPECT, paperH, maxTilt: COMPACT_MAX_TILT }
+}
+
+function initialLayout(): Layout {
+  return isCompact() ? compactLayout(window.innerWidth, window.innerHeight - TOOLBAR_H) : computeLayout()
+}
 
 function computeLayout(): Layout {
   // 2px for the panel border.
@@ -47,7 +67,7 @@ function computeLayout(): Layout {
   const availH = window.innerHeight - GUTTER * 2 - TOOLBAR_H - 2
   const paperH = Math.floor(Math.min(PAGE_H * TARGET_SCALE, availH / FRAME_Y, availW / FRAME_X / ASPECT))
   const paperW = paperH * ASPECT
-  return { w: Math.round(paperW * FRAME_X), h: Math.round(paperH * FRAME_Y), paperW, paperH }
+  return { w: Math.round(paperW * FRAME_X), h: Math.round(paperH * FRAME_Y), paperW, paperH, maxTilt: MAX_TILT }
 }
 
 type Viewer = {
@@ -64,6 +84,8 @@ type ViewerOpts = {
   onReady: () => void
   onFail: () => void
   onZoomChange: (zoomed: boolean) => void
+  /* A tap (no drag) that missed the page — the dark space around it. */
+  onBackgroundTap: () => void
 }
 
 /* Off-white back with the print faintly showing through, mirrored the way
@@ -357,10 +379,26 @@ function createViewer(host: HTMLElement, opts: ViewerOpts): Viewer {
     }
   }
 
+  /* Tap detection: one pointer, barely moved, released quickly. */
+  let tap: { x: number; y: number; t: number } | null = null
+  const raycaster = new Raycaster()
+  const ndc = new Vector2()
+
+  function hitsPaper(clientX: number, clientY: number): boolean {
+    if (!ready) return false
+    const rect = canvas.getBoundingClientRect()
+    ndc.set(((clientX - rect.left) / rect.width) * 2 - 1, -(((clientY - rect.top) / rect.height) * 2 - 1))
+    camera.updateMatrixWorld()
+    paper.updateMatrixWorld()
+    raycaster.setFromCamera(ndc, camera)
+    return raycaster.intersectObject(paper, false).length > 0
+  }
+
   function onPointerDown(e: PointerEvent) {
     if (e.button !== 0 && e.pointerType === 'mouse') return
     canvas.setPointerCapture(e.pointerId)
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    tap = pointers.size === 1 ? { x: e.clientX, y: e.clientY, t: performance.now() } : null
     s.dragging = true
     if (mode !== 'pinch' || pointers.size >= 2) startGesture()
     canvas.style.cursor = mode === 'rotate' ? 'grabbing' : 'move'
@@ -374,6 +412,7 @@ function createViewer(host: HTMLElement, opts: ViewerOpts): Viewer {
     const dx = e.clientX - prev.x
     const dy = e.clientY - prev.y
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    if (tap && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) > 8) tap = null
     const now = performance.now()
     const moveDt = Math.max((now - lastMoveAt) / 1000, 1 / 240)
     lastMoveAt = now
@@ -395,13 +434,21 @@ function createViewer(host: HTMLElement, opts: ViewerOpts): Viewer {
       const ds = dx * (Math.PI / layout.w)
       s.spin += ds
       s.spinVel = s.spinVel * 0.4 + (ds / moveDt) * 0.6
-      s.tilt = MathUtils.clamp(s.tilt + dy * (Math.PI / layout.h) * 0.6, -MAX_TILT, MAX_TILT)
+      s.tilt = MathUtils.clamp(s.tilt + dy * (Math.PI / layout.h) * 0.6, -layout.maxTilt, layout.maxTilt)
     }
     kick()
   }
 
   function onPointerUp(e: PointerEvent) {
     if (!pointers.delete(e.pointerId)) return
+    const wasTap = e.type === 'pointerup' && tap !== null && performance.now() - tap.t < 500
+    tap = null
+    if (wasTap && pointers.size === 0 && !hitsPaper(e.clientX, e.clientY)) {
+      s.dragging = false
+      mode = 'rotate'
+      opts.onBackgroundTap()
+      return
+    }
     if (pointers.size === 0) {
       s.dragging = false
       // A drag that stopped before letting go shouldn't fling.
@@ -489,7 +536,8 @@ const iconBtn =
   'hover-accent pressable inline-flex items-center justify-center w-8 h-8 shrink-0'
 
 export default function ResumeModal({ onClose }: { onClose: () => void }) {
-  const [layout, setLayout] = useState(computeLayout)
+  const [compact, setCompact] = useState(isCompact)
+  const [layout, setLayout] = useState(initialLayout)
   const [status, setStatus] = useState<'loading' | 'ready' | 'fallback'>('loading')
   const [zoomed, setZoomed] = useState(false)
   const [closing, setClosing] = useState(false)
@@ -506,17 +554,24 @@ export default function ResumeModal({ onClose }: { onClose: () => void }) {
     window.setTimeout(onClose, 160)
   }, [onClose, reducedMotion])
 
+  // The viewer is created once; it reaches the latest close handler via a ref.
+  const requestCloseRef = useRef(requestClose)
+  useEffect(() => {
+    requestCloseRef.current = requestClose
+  }, [requestClose])
+
   useEffect(() => {
     const host = hostRef.current
     if (!host) return
     let viewer: Viewer
     try {
       viewer = createViewer(host, {
-        layout: computeLayout(),
+        layout: initialLayout(),
         reducedMotion,
         onReady: () => setStatus('ready'),
         onFail: () => setStatus('fallback'),
         onZoomChange: setZoomed,
+        onBackgroundTap: () => requestCloseRef.current(),
       })
     } catch {
       // No WebGL — the flat image below takes over.
@@ -535,10 +590,25 @@ export default function ResumeModal({ onClose }: { onClose: () => void }) {
   }, [layout])
 
   useEffect(() => {
-    const onResize = () => setLayout(computeLayout())
+    const onResize = () => {
+      setCompact(isCompact())
+      if (!isCompact()) setLayout(computeLayout())
+    }
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+
+  // Full-screen mode sizes the canvas from the space CSS actually gives it,
+  // which already accounts for the toolbar and iOS safe areas.
+  useEffect(() => {
+    const host = hostRef.current
+    if (!compact || !host) return
+    const ro = new ResizeObserver(() => {
+      if (host.clientWidth && host.clientHeight) setLayout(compactLayout(host.clientWidth, host.clientHeight))
+    })
+    ro.observe(host)
+    return () => ro.disconnect()
+  }, [compact])
 
   // Lock page scroll and hand focus back to the trigger on close.
   useEffect(() => {
@@ -618,10 +688,14 @@ export default function ResumeModal({ onClose }: { onClose: () => void }) {
         aria-modal="true"
         aria-label="Resume viewer"
         tabIndex={-1}
-        className="modal-panel flex flex-col border overflow-hidden"
-        style={{ width: layout.w + 2, borderColor: 'var(--border)', background: 'var(--bg2)' }}
+        className={`modal-panel flex flex-col overflow-hidden ${compact ? 'fixed inset-0' : 'border'}`}
+        style={compact ? { background: 'var(--bg2)', paddingTop: 'env(safe-area-inset-top)' } : { width: layout.w + 2, borderColor: 'var(--border)', background: 'var(--bg2)' }}
       >
-        <div ref={hostRef} className="relative select-none" style={{ width: layout.w, height: layout.h }}>
+        <div
+          ref={hostRef}
+          className={`relative select-none overflow-hidden ${compact ? 'flex-1 min-h-0' : ''}`}
+          style={compact ? undefined : { width: layout.w, height: layout.h }}
+        >
           {status === 'loading' && (
             <div
               className="absolute inset-0 flex items-center justify-center text-[12px] tracking-wider"
@@ -631,7 +705,12 @@ export default function ResumeModal({ onClose }: { onClose: () => void }) {
             </div>
           )}
           {status === 'fallback' && (
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div
+              className="absolute inset-0 flex items-center justify-center"
+              onClick={e => {
+                if (e.target === e.currentTarget) requestClose()
+              }}
+            >
               <img
                 src={RESUME_IMG}
                 alt="Arpit Mishra's resume"
@@ -641,8 +720,12 @@ export default function ResumeModal({ onClose }: { onClose: () => void }) {
           )}
         </div>
         <div
-          className="flex items-center justify-between gap-3 border-t pl-4 pr-2"
-          style={{ height: TOOLBAR_H, borderColor: 'var(--border)' }}
+          className="flex items-center justify-between gap-3 border-t pl-4 pr-2 shrink-0"
+          style={{
+            height: compact ? `calc(${TOOLBAR_H}px + env(safe-area-inset-bottom))` : TOOLBAR_H,
+            paddingBottom: compact ? 'env(safe-area-inset-bottom)' : undefined,
+            borderColor: 'var(--border)',
+          }}
         >
           <div className="flex items-baseline gap-3 min-w-0 text-[12px] tracking-wider">
             <span style={{ color: 'var(--fg)' }}>resume.pdf</span>
