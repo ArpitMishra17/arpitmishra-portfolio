@@ -76,6 +76,12 @@ func main() {
 		if v, err := strconv.ParseFloat(os.Getenv("TUI_T"), 64); err == nil {
 			mdl.st = v
 		}
+		// TUI_FIGHT stages a fight with the first fake visitor, a moment in:
+		// swing, hit, jump or dead (needs TUI_VISITORS=1 or more)
+		if f := os.Getenv("TUI_FIGHT"); f != "" {
+			stageFight(f, mdl.at, max(mdl.contentWidth()-4, 30))
+			mdl.walked = true
+		}
 		if v, err := strconv.Atoi(os.Getenv("TUI_LOGO")); err == nil { // which Stack logo shows
 			mdl.logoSel = v % len(logoArt)
 		}
@@ -93,6 +99,9 @@ func main() {
 			}
 			if strings.EqualFold(os.Args[4], "boot") {
 				mdl.booting = true
+			}
+			if strings.EqualFold(os.Args[4], "weapon") {
+				mdl.modal, mdl.mSel = modalWeapon, 2
 			}
 			if strings.EqualFold(os.Args[4], "note") {
 				mdl.sec, mdl.modal, mdl.note = secContact, modalNote, "hello from the render path"

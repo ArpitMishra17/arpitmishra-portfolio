@@ -39,6 +39,7 @@ const (
 	modalHelp
 	modalTheme
 	modalNote
+	modalWeapon
 )
 
 const sidebarW = 26
@@ -196,7 +197,8 @@ func (m model) animating() bool {
 func (m model) frameDur() time.Duration {
 	if m.booting || m.since(m.secAt) < 1.2 || m.since(m.selAt) < 1.2 ||
 		(m.noteSent && m.since(m.noteAt) < 3) ||
-		(m.sec == secStack && math.Mod(m.since(m.logoAt), logoHold) < 0.5) {
+		(m.sec == secStack && math.Mod(m.since(m.logoAt), logoHold) < 0.5) ||
+		(m.sec == secOverview && hub.busy(m.at)) {
 		return fastTick
 	}
 	return tickDur
@@ -296,6 +298,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				hub.walk(m.session, step)
 				m.walked = true
 			}
+		case "w", " ", "space":
+			if m.sec == secOverview {
+				hub.jump(m.session, m.at)
+			}
+		case "f":
+			if m.sec == secOverview {
+				hub.strike(m.session, m.roadWidth(), m.at)
+			}
+		case "e":
+			if m.sec == secOverview {
+				m.modal, m.mSel = modalWeapon, hub.weaponOf(m.session)
+			}
 		case "n":
 			if m.sec == secContact && !m.noteSent {
 				m.modal, m.note, m.noteErr = modalNote, "", false
@@ -355,6 +369,9 @@ func (m *model) endBoot() {
 func (m model) updateModal(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.modal == modalNote {
 		return m.updateNote(msg)
+	}
+	if m.modal == modalWeapon {
+		return m.updateWeapon(msg)
 	}
 	items := m.filteredThemes()
 	switch msg.String() {
@@ -436,6 +453,28 @@ func (m model) updateNote(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// updateWeapon moves through the weapon picker: arrows move, enter arms you,
+// esc leaves things as they were.
+func (m model) updateWeapon(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "esc", "e":
+		m.modal = modalNone
+	case "enter":
+		hub.arm(m.session, m.mSel)
+		m.modal = modalNone
+	case "up", "k":
+		m.mSel = (m.mSel + len(weapons) - 1) % len(weapons)
+	case "down", "j":
+		m.mSel = (m.mSel + 1) % len(weapons)
+	case "1", "2", "3", "4", "5", "6", "7", "8", "9":
+		if n := int(msg.String()[0] - '1'); n < len(weapons) {
+			hub.arm(m.session, n)
+			m.modal = modalNone
+		}
+	}
+	return m, nil
+}
+
 // previewTheme applies whatever the cursor sits on, without committing it.
 func (m *model) previewTheme() {
 	items := m.filteredThemes()
@@ -501,11 +540,16 @@ func (m model) contentWidth() int {
 	return max(innerW-sidebarW-5, 20)
 }
 
+// roadWidth is how wide the Overview's promenade is drawn, which is what a
+// strike's reach is measured against.
+func (m model) roadWidth() int { return m.contentWidth() - 4 }
+
 // sceneOpts snapshots the world for this frame's scenes.
 func (m model) sceneOpts() sceneOpts {
 	return sceneOpts{
 		t: m.st, hour: mumbaiHour(), moon: moonPhase(time.Now()),
 		rain: m.rain, visitors: hub.list(), self: m.session, hint: !m.walked,
+		now: m.at, kill: hub.lastKill(),
 	}
 }
 
@@ -628,6 +672,8 @@ func (m model) overlay(frame lipgloss.Style, _ string) string {
 		dlgStr = m.themeDialog()
 	case modalNote:
 		dlgStr = m.noteDialog()
+	case modalWeapon:
+		dlgStr = m.weaponDialog()
 	}
 	if dlgStr == "" {
 		return m.viewApp(frame)
@@ -805,6 +851,45 @@ func (m model) themeDialog() string {
 		), innerW+4)
 }
 
+// weaponDialog lists the weapons with what each one looks like mid-swing and
+// how it compares: reach, how hard it hits, how quickly it swings again.
+func (m model) weaponDialog() string {
+	const innerW = 50
+	pips := func(v, lo, hi float64) string {
+		n := clamp(int(math.Round(1+4*(v-lo)/(hi-lo))), 1, 5)
+		return stOnline.Render(strings.Repeat("●", n)) + stFaint.Render(strings.Repeat("○", 5-n))
+	}
+	cur := hub.weaponOf(m.session)
+	content := []string{
+		stFaint.Render(fmt.Sprintf("%-23s%-8s%-8s%s", "", "reach", "power", "speed")),
+	}
+	for i, w := range weapons {
+		mark := "  "
+		if i == cur {
+			mark = stOnline.Render("● ")
+		}
+		look := "/|─" + w.strike
+		name := fmt.Sprintf("%d %-7s", i+1, w.name)
+		if i == m.mSel {
+			name = stSelRow.Render(name)
+		} else {
+			name = stBody.Render(name)
+		}
+		row := mark + name + "  " + stDim.Render(padRight(look, 10)) +
+			pips(float64(w.reach), 2, 6) + "   " +
+			pips(float64(w.dmg), 12, 45) + "   " +
+			pips(-w.cool.Seconds(), -1, -0.28)
+		content = append(content, row)
+	}
+	content = append(content, "", "  "+stFaint.Render("everyone on the promenade sees what you carry."))
+	return dialog("weapon", content,
+		keycaps(
+			[2]string{"↑↓", "choose"},
+			[2]string{"enter", "arm"},
+			[2]string{"esc", "close"},
+		), innerW+4)
+}
+
 func (m model) helpDialog() string {
 	const innerW = 46
 	rows := [][2]string{
@@ -813,6 +898,9 @@ func (m model) helpDialog() string {
 		{"← → / tab", "switch section"},
 		{"1 – 5", "jump to section"},
 		{"a / d", "walk the promenade"},
+		{"w / space", "jump (overview)"},
+		{"f", "strike (overview)"},
+		{"e", "pick a weapon"},
 		{"n", "leave a note (contact)"},
 		{"r", "toggle rain"},
 		{"m", "pause motion"},
@@ -874,7 +962,7 @@ func (m model) footerHint() string {
 	case m.modal != modalNone:
 		return key("esc", "close")
 	case m.sec == secOverview:
-		return key("a/d", "walk") + key("⇤⇥", "section") + key("t", "themes") + key("?", "help") + key("q", "quit")
+		return key("a/d", "walk") + key("w", "jump") + key("f", "strike") + key("e", "weapon") + key("⇤⇥", "section") + key("t", "themes") + key("?", "help") + key("q", "quit")
 	case m.sec == secStack:
 		return key("↑↓", "logo") + key("⇤⇥", "section") + key("t", "themes") + key("?", "help") + key("q", "quit")
 	case m.sec == secContact && !m.noteSent:
@@ -975,7 +1063,7 @@ func (m model) viewOverview(w, h int) string {
 	b.WriteString(stFaint.Render("  ⌘/ctrl-click a link to open it"))
 
 	o, pal := m.sceneOpts(), paletteOf(activeColors)
-	return bottomScene(b.String(), tw, h, 4, 6, func(w, h int) *canvas {
+	return bottomScene(b.String(), tw, h, 4, 9, func(w, h int) *canvas {
 		return road(w, h, o, pal)
 	}, m.profile)
 }

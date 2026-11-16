@@ -16,6 +16,8 @@ type sceneOpts struct {
 	hint     bool // show the walking keys beside this visitor until they've walked
 	visitors []visitor
 	self     int
+	now      time.Time // wall clock, which the fighting is timed by
+	kill     killNote
 }
 
 var ist = time.FixedZone("IST", 5*3600+1800)

@@ -21,11 +21,25 @@ type visitor struct {
 	name    string
 	x       float64 // 0–1 across the promenade, so any terminal width works
 	movedAt time.Time
+
+	// the fighting, see fight.go
+	face      int // 1 facing right, -1 left
+	weapon    int // index into weapons
+	hp        int
+	jumpAt    time.Time
+	swingAt   time.Time
+	hitAt     time.Time // when last hit …
+	hitDir    int       // … from which way it came (the striker's facing) …
+	lastDmg   int       // … and how hard
+	respawnAt time.Time // set while knocked out: when they get back up
+	spawnAt   time.Time // when they last got back up
 }
 
 type visitorHub struct {
-	mu sync.Mutex
-	vs map[int]*visitor
+	mu      sync.Mutex
+	vs      map[int]*visitor
+	actedAt time.Time // the last jump or strike, see busy
+	kill    killNote
 }
 
 var hub = &visitorHub{vs: map[int]*visitor{}}
@@ -33,7 +47,11 @@ var hub = &visitorHub{vs: map[int]*visitor{}}
 func (h *visitorHub) join(id int, name string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	h.vs[id] = &visitor{id: id, name: name, x: 0.12 + rand3(id, 0, 141)*0.76}
+	v := &visitor{id: id, name: name, x: 0.12 + rand3(id, 0, 141)*0.76, face: 1, hp: maxHP, weapon: defaultWeapon}
+	if v.x > 0.5 { // face the middle
+		v.face = -1
+	}
+	h.vs[id] = v
 }
 
 func (h *visitorHub) leave(id int) {
@@ -46,15 +64,27 @@ func (h *visitorHub) walk(id int, dx float64) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if v, ok := h.vs[id]; ok {
+		t := time.Now()
+		settle(v, t)
+		if v.dead() {
+			return
+		}
 		v.x = clamp01(v.x + dx)
-		v.movedAt = time.Now()
+		v.movedAt = t
+		if dx < 0 {
+			v.face = -1
+		} else if dx > 0 {
+			v.face = 1
+		}
 	}
 }
 
 func (h *visitorHub) list() []visitor {
 	h.mu.Lock()
+	t := time.Now()
 	out := make([]visitor, 0, len(h.vs))
 	for _, v := range h.vs {
+		settle(v, t)
 		out = append(out, *v)
 	}
 	h.mu.Unlock()

@@ -18,6 +18,7 @@ go run . -render 120 40 Contact   # print one fixed-size frame (layout testing)
 - `←`/`→` or `tab`/`shift+tab` — switch section (also `1`–`5`)
 - `↑`/`↓` or `k`/`j` — select item
 - `a`/`d` — walk the promenade (Overview); everyone connected is on it
+- `w`/`space` — jump · `f` — strike whoever's in front of you · `e` — pick a weapon (fists, sword, spear, axe, hammer, saber). Hits show a health bar; at zero you're down for 3–5 s, then back up with a moment of invulnerability. Jumping at the right time dodges a strike
 - `n` — leave a note (Contact) — appended to `GUESTBOOK_PATH` (default `./guestbook.jsonl`), never shown to others
 - `r` — toggle rain · `m` — pause all motion
 - `t` — theme picker (opencode-style dialog, type to filter)
@@ -37,6 +38,7 @@ in Mumbai with the real moon phase. Shared state is just the visitor list
 TUI_HOUR=18.5 go run . -local        # pin the time of day (dusk here)
 TUI_RAIN=1 go run . -local           # force the monsoon
 TUI_COLOR=1 TUI_VISITORS=3 TUI_T=7 go run . -render 120 36   # coloured still
+TUI_VISITORS=1 TUI_FIGHT=hit go run . -render 120 40 overview   # a fight still: swing, hit, jump or dead
 TUI_SINCE=0.2 go run . -render 120 36 Experience   # freeze transitions 0.2s in
 go run . -render 120 36 ss1          # a screensaver effect (ss0 is pipes, ss0–ss5), or `boot`, `note`
 ```
